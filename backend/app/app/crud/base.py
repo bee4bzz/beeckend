@@ -3,15 +3,15 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.base_class import ID, Base1toN
+from app.db.base_class import ID, Base, Base1toN, BaseNto1
 from sqlalchemy.sql.expression import select
 
-ModelType = TypeVar("ModelType", bound=Base1toN)
+ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
-class CRUDBase1ToN(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
+class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def __init__(self, db: AsyncSession, model: Type[ModelType]):
         """
         CRUD object with default methods to Create, Read, Update, Delete (CRUD).
@@ -33,17 +33,6 @@ class CRUDBase1ToN(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         result = await self.db.execute(query)
         res = result.scalars().all()
         return res
-
-    async def get_multi_by_owner(
-        self, *, owner_id: int, skip: int = 0, limit: int = 100
-    ) -> List[ModelType]:
-        result = await self.db.execute(
-            select(self.model)
-            .filter(self.model.owner_id == owner_id)
-            .offset(skip)
-            .limit(limit)
-        )
-        return result.scalars().all()
 
     async def create(self, *, create_dict: CreateSchemaType) -> ModelType:
         create_dict_data = create_dict.dict()
@@ -75,3 +64,61 @@ class CRUDBase1ToN(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await self.db.delete(obj)
         await self.db.commit()
         return cast(ModelType, obj)
+
+
+ModelType = TypeVar("ModelType", bound=Base1toN)
+
+
+class CRUDBase1ToN(
+    Generic[ModelType, CreateSchemaType, UpdateSchemaType],
+):
+    def __init__(self, db: AsyncSession, model: Type[ModelType]):
+        """
+        CRUD object with default methods to Create, Read, Update, Delete (CRUD).
+
+        **Parameters**
+
+        * `model`: A SQLAlchemy model class
+        * `schema`: A Pydantic model (schema) class
+        """
+        self.db = db
+        self.model = model
+
+    async def get_children(
+        self, *, owner_id: int, skip: int = 0, limit: int = 100
+    ) -> List[ModelType]:
+        result = await self.db.execute(
+            select(self.model)
+            .filter(self.model.id == owner_id)
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
+
+ModelType = TypeVar("ModelType", bound=BaseNto1)
+
+
+class CRUDBaseNTo1(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
+    def __init__(self, db: AsyncSession, model: Type[ModelType]):
+        """
+        CRUD object with default methods to Create, Read, Update, Delete (CRUD).
+
+        **Parameters**
+
+        * `model`: A SQLAlchemy model class
+        * `schema`: A Pydantic model (schema) class
+        """
+        self.db = db
+        self.model = model
+
+    async def get_multi_by_owner(
+        self, *, owner_id: int, skip: int = 0, limit: int = 100
+    ) -> List[ModelType]:
+        result = await self.db.execute(
+            select(self.model)
+            .filter(self.model.owner_id == owner_id)
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()

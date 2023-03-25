@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 import uuid
 
 from sqlalchemy import Column, String
-from app.db.base_class import ID
+from app.db.base_class import ID, Base1toN
 
 if TYPE_CHECKING:
     from .user import User  # noqa: F401

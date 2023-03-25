@@ -5,6 +5,7 @@ description = ""
 authors = ["Admin <admin@example.com>"]
 
 [tool.poetry.dependencies]
+websockets = "^10.1"
 python = "^3.11"
 uvicorn = "^0.18.3"
 fastapi = "^0.82.0"

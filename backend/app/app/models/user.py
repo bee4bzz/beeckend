@@ -5,9 +5,6 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
 
 from app.db.base_class import Base, Base1toN
 
-if TYPE_CHECKING:
-    from .item import ItemBase  # noqa: F401
-
 
 class User(
     SQLAlchemyBaseUserTableUUID,
@@ -18,5 +15,5 @@ class User(
     User model.
     """
 
-    __ownedtablename__ = "User"
+    __ownedtablename__ = "Cheptel"
     full_name = Column(String, nullable=False, index=True)

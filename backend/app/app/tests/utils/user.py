@@ -51,7 +51,7 @@ async def authentication_token_from_email(
         user_in_create = UserCreate(full_name=email, email=email, password=password)
         user = await user_crud.create(create_dict=user_in_create.dict())
     else:
-        user_in_update = UserUpdate(password=password)
+        user_in_update = UserUpdate(password=password, **user.dict())
         user = await user_crud.update(user=user, update_dict=user_in_update.dict())
 
     return await user_authentication_headers(

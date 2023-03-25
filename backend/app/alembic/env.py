@@ -39,6 +39,8 @@ def get_url():
         db = "postgres"
     else:
         db = os.getenv("POSTGRES_DB", "app")
+
+    print(f"postgresql://{user}:{password}@{server}/{db}")
     return f"postgresql://{user}:{password}@{server}/{db}"
 
 

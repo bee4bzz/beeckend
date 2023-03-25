@@ -9,8 +9,8 @@ if TYPE_CHECKING:
 
 class Cheptel(
     Base,  # type: ignore
-    Base1toN,
     BaseNto1,
+    Base1toN,
     ItemBase,
 ):
     __ownertablename__ = "User"

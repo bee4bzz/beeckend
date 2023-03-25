@@ -82,7 +82,7 @@ async def test_update_user(async_get_db: AsyncSession) -> None:
     user_in = UserCreate(email=email, password=password, is_superuser=True)
     user = await user_crud.create(create_dict=user_in.dict())
     new_password = random_lower_string()
-    user_in_update = UserUpdate(password=new_password, is_superuser=True)
+    user_in_update = UserUpdate(password=new_password, **user_in.dict())
     await user_crud.update(user=user, update_dict=user_in_update.dict())
     user_2 = await user_crud.get(id=user.id)
     assert user_2

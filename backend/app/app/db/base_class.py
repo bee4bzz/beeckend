@@ -34,14 +34,12 @@ class BaseNto1(BaseModel):
 
     @declared_attr
     def owner(cls) -> RelationshipProperty:
-        return relationship(
-            cls.__ownertablename__, back_populates=f"{cls.__name__.lower()}s"
-        )
+        return relationship(cls.__ownertablename__, back_populates="children")
 
 
 class Base1toN(BaseModel):
     """
-    Base class for models with a 1-to-N relationship to a model.
+    Base class for models with a 1-to-N relationship to another model.
     """
 
     __ownedtablename__: str
