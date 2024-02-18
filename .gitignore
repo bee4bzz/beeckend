@@ -1,5 +1,37 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Test coverage output
+coverage*.*
+
+# Test report
+report.xml
+
+# Test email
+preview.html
+
+# postgres data volume used by postgres server container for testing purpose
+testdata/postgres
+
+# server binary
+./server
+
+# PID file generated to support live reload
+.pid
+
+.env*
 .vscode
-.mypy_cache
-docker-stack.yml
-.env
-cookiecutter-config-file.yml
+postgresql.conf
+
+key
+key.pub
