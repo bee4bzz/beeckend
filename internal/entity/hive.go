@@ -5,6 +5,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	HiveNotesKey      = "Notes"
+	MaxNBRisers  uint = 5
+)
+
 type Hive struct {
 	gorm.Model
 	Name      string `gorm:"not null"`
@@ -17,7 +22,7 @@ func (h Hive) Validate() error {
 	return validation.ValidateStruct(&h,
 		validation.Field(&h.Name, validation.Required),
 		validation.Field(&h.CheptelID, validation.Required),
-		validation.Field(&h.Notes, validation.Each(validation.Required)),
+		validation.Field(&h.Notes),
 	)
 }
 
@@ -36,9 +41,9 @@ func (h HiveNote) Validate() error {
 	return validation.ValidateStruct(&h,
 		validation.Field(&h.HiveID, validation.Required),
 		validation.Field(&h.Name, validation.Required),
-		validation.Field(&h.NBRisers, validation.Max(5)),
+		validation.Field(&h.NBRisers, validation.Max(MaxNBRisers)),
 		validation.Field(&h.Operation, validation.Required),
 		validation.Field(&h.Observation, validation.NilOrNotEmpty),
-		validation.Field(&h.Albums, validation.Each(validation.Required)),
+		validation.Field(&h.Albums),
 	)
 }

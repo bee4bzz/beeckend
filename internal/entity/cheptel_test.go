@@ -9,7 +9,18 @@ import (
 )
 
 var (
-	EmptyCheptel = Cheptel{}
+	EmptyCheptel   = Cheptel{}
+	InvalidCheptel = Cheptel{
+		Hives: []Hive{
+			InvalidHive,
+		},
+		Notes: []CheptelNote{
+			InvalidNote,
+		},
+		Albums: []Album{
+			InvalidAlbum,
+		},
+	}
 	ValidCheptel = Cheptel{
 		Name: utils.ValidName(),
 	}
@@ -17,6 +28,7 @@ var (
 
 func TestCheptel(t *testing.T) {
 	assert.ErrorContains(t, EmptyCheptel.Validate(), "Name: cannot be blank.", "Cheptel should not be empty")
+	assert.ErrorContains(t, InvalidCheptel.Validate(), "Name: cannot be blank; Notes:", "Cheptel should not be empty")
 	assert.NoError(t, ValidCheptel.Validate(), "Cheptel should be valid")
 }
 
@@ -26,7 +38,7 @@ var (
 		State:       utils.String(""),
 		Observation: utils.String(""),
 	}
-	BadWeatherNote = CheptelNote{
+	InvalidNote = CheptelNote{
 		CheptelID: 1,
 		Name:      utils.ValidName(),
 		Flora:     utils.ValidName(),
@@ -52,7 +64,7 @@ var (
 
 func TestChecptelNote(t *testing.T) {
 	assert.ErrorContains(t, EmptyNote.Validate(), "CheptelID: cannot be blank; Flora: cannot be blank; Name: cannot be blank; Observation: cannot be blank; State: cannot be blank; Weather: cannot be blank.", "Cheptel should not be empty")
-	assert.ErrorContains(t, BadWeatherNote.Validate(), "Weather: must be a valid value.", "Cheptel should not be empty")
+	assert.ErrorContains(t, InvalidNote.Validate(), "Weather: must be a valid value.", "Cheptel should not be empty")
 	assert.NoError(t, ValidNote.Validate(), "Cheptel should be valid")
 	assert.NoError(t, ValidFilledNote.Validate(), "Cheptel should be valid")
 }

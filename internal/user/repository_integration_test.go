@@ -46,17 +46,6 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 	}
 }
 
-// this function executes before each test case
-func (suite *RepositoryTestSuite) SetupTest() {
-	// reset StartingNumber to one
-	fmt.Println("-- From SetupTest")
-}
-
-// this function executes after each test case
-func (suite *RepositoryTestSuite) TearDownTest() {
-	fmt.Println("-- From TearDownTest")
-}
-
 func (suite *RepositoryTestSuite) TestCreate() {
 	now := time.Now()
 	user, err := suite.Repository.Create(test.ValidUser)
@@ -99,6 +88,14 @@ func (suite *RepositoryTestSuite) TestGet() {
 
 func (suite *RepositoryTestSuite) TestNoRowGet() {
 	user, err := suite.Repository.Get(1000)
+	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
+	assert.Empty(suite.T(), user)
+}
+
+func (suite *RepositoryTestSuite) TestSoftDelete() {
+	err := suite.Repository.SoftDelete(suite.User)
+	assert.NoError(suite.T(), err)
+	user, err := suite.Repository.Get(suite.User.ID)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 	assert.Empty(suite.T(), user)
 }

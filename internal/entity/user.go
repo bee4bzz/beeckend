@@ -18,6 +18,6 @@ func (u User) Validate() error {
 	return validation.ValidateStruct(&u,
 		validation.Field(&u.Email, validation.Required, is.Email),
 		validation.Field(&u.Name, validation.Required),
-		validation.Field(&u.Cheptels, validation.Each(validation.Required)),
+		validation.Field(&u.Cheptels),
 	)
 }

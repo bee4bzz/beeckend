@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	CheptelTableName = "Cheptels"
+	CheptelsKey = "Cheptels"
 )
 
 type Cheptel struct {
@@ -23,9 +23,9 @@ type Cheptel struct {
 func (c Cheptel) Validate() error {
 	return validation.ValidateStruct(&c,
 		validation.Field(&c.Name, validation.Required),
-		validation.Field(&c.Hives, validation.Each(validation.Required)),
-		validation.Field(&c.Notes, validation.Each(validation.Required)),
-		validation.Field(&c.Albums, validation.Each(validation.Required)),
+		validation.Field(&c.Hives),
+		validation.Field(&c.Notes),
+		validation.Field(&c.Albums),
 	)
 }
 

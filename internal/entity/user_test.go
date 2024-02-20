@@ -9,10 +9,13 @@ import (
 )
 
 var (
-	EmptyUser        = User{}
-	InvalidEmailUser = User{
+	EmptyUser   = User{}
+	InvalidUser = User{
 		Name:  utils.ValidName(),
 		Email: random.String(10),
+		Cheptels: []Cheptel{
+			InvalidCheptel,
+		},
 	}
 	ValidUser = User{
 		Name:  utils.ValidName(),
@@ -25,6 +28,8 @@ var (
 
 func TestUser(t *testing.T) {
 	assert.ErrorContains(t, EmptyUser.Validate(), "Email: cannot be blank; Name: cannot be blank.", "User should not be empty")
-	assert.ErrorContains(t, InvalidEmailUser.Validate(), "Email: must be a valid email address.", "User should have a valid email")
+	err := InvalidUser.Validate()
+	assert.ErrorContains(t, err, "Cheptels", "User should not be empty")
+	assert.ErrorContains(t, err, "Email: must be a valid email address.", "User should not be empty")
 	assert.NoError(t, ValidUser.Validate(), "User should be valid")
 }

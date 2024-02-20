@@ -19,6 +19,6 @@ func NewRepository(db *gorm.DB) *Repository {
 // Retrieve user from the database
 func (r *Repository) Get(ID uint) (entity.User, error) {
 	var user entity.User
-	err := r.DB.Model(&entity.User{}).Preload(entity.CheptelTableName).First(&user, ID).Error
+	err := r.DB.Model(&entity.User{}).Preload(entity.CheptelsKey).First(&user, ID).Error
 	return user, err
 }
