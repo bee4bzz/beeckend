@@ -8,8 +8,8 @@ import (
 
 type User struct {
 	gorm.Model
-	Name     string    `json:"name" gorm:"not null"`
-	Email    string    `json:"email" gorm:"not null"`
+	Name     string    `gorm:"not null"`
+	Email    string    `gorm:"unique;not null"`
 	Cheptels []Cheptel `gorm:"many2many:user_cheptels;constraint:OnDelete:CASCADE;"`
 }
 

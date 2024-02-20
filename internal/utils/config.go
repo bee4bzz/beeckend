@@ -1,6 +1,20 @@
 package utils
 
-import "github.com/spf13/viper"
+import (
+	"time"
+
+	"github.com/spf13/viper"
+	"gorm.io/gorm"
+)
+
+var (
+	GormConfig = gorm.Config{
+		NowFunc: func() time.Time {
+			// Spécifier la localisation temporelle que vous souhaitez utiliser
+			return time.Now().UTC() // Par exemple, UTC
+		},
+	}
+)
 
 // Config holds the application configuration.
 type Config struct {

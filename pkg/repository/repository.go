@@ -29,6 +29,10 @@ func (r *Repository[T]) Create(entity T) (T, error) {
 		return entity, err
 	}
 	err := r.DB.Create(&entity).Error
+	if err != nil {
+		var zero T
+		return zero, err
+	}
 	return entity, err
 }
 
