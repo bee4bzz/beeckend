@@ -8,3 +8,7 @@ devenv-start: ## start all dependencies to test and run the web api (DB, mail, .
 .PHONY: devenv-stop
 devenv-stop: ## stop all dependencies to test and run the web api (DB, mail, ...)
 	docker-compose down --remove-orphans
+
+.PHONY: test
+test: ## run all tests
+	go test -v -cover ./...
