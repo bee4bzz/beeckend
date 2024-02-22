@@ -18,9 +18,9 @@ func NewRepository[T Validator](db *gorm.DB) *Repository[T] {
 
 // Retrieve entity from the database
 func (r *Repository[T]) Get(ID uint) (T, error) {
-	var user T
-	err := r.DB.Model(&user).First(&user, ID).Error
-	return user, err
+	var entity T
+	err := r.DB.Model(&entity).First(&entity, ID).Error
+	return entity, err
 }
 
 // Create a new entity in the database

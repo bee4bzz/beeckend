@@ -8,12 +8,13 @@ import (
 )
 
 const (
-	CheptelsKey = "Cheptels"
+	UsersKey = "Users"
 )
 
 type Cheptel struct {
 	gorm.Model
 	Name   string        `gorm:"not null"`
+	Users  []User        `gorm:"many2many:user_cheptels;constraint:OnDelete:CASCADE;"`
 	Hives  []Hive        `gorm:"constraint:OnDelete:CASCADE;"`
 	Notes  []CheptelNote `gorm:"constraint:OnDelete:CASCADE;"`
 	Albums []Album       `gorm:"polymorphic:Owner;constraint:OnDelete:CASCADE; "`
@@ -23,6 +24,7 @@ type Cheptel struct {
 func (c Cheptel) Validate() error {
 	return validation.ValidateStruct(&c,
 		validation.Field(&c.Name, validation.Required),
+		validation.Field(&c.Users),
 		validation.Field(&c.Hives),
 		validation.Field(&c.Notes),
 		validation.Field(&c.Albums),

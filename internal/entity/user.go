@@ -6,6 +6,10 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	CheptelsKey = "Cheptels"
+)
+
 type User struct {
 	gorm.Model
 	Name     string    `gorm:"not null"`

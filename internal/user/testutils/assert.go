@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
+	"github.com/gaetanDubuc/beeckend/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,12 +20,10 @@ func AssertUser(t *testing.T, expected, actual entity.User) {
 
 func AssertUserCreated(t *testing.T, expected, actual entity.User, now time.Time) {
 	AssertUser(t, expected, actual)
-	assert.GreaterOrEqual(t, actual.CreatedAt.Unix(), now.Unix(), "CreatedAt should be greater than now")
-	assert.GreaterOrEqual(t, actual.UpdatedAt.Unix(), now.Unix(), "UpdatedAt should be greater than now")
+	utils.AssertCreated(t, expected.Model, actual.Model, now)
 }
 
 func AssertUserUpdated(t *testing.T, expected, actual entity.User, now time.Time) {
 	AssertUser(t, expected, actual)
-	assert.LessOrEqual(t, actual.CreatedAt.Unix(), now.Unix(), "CreatedAt should be less than now")
-	assert.GreaterOrEqual(t, actual.UpdatedAt.Unix(), now.Unix(), "UpdatedAt should be greater than now")
+	utils.AssertUpdated(t, expected.Model, actual.Model, now)
 }

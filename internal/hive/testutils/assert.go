@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
+	"github.com/gaetanDubuc/beeckend/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,12 +19,10 @@ func AssertHive(t *testing.T, expected, actual entity.Hive) {
 
 func AssertHiveCreated(t *testing.T, expected, actual entity.Hive, now time.Time) {
 	AssertHive(t, expected, actual)
-	assert.GreaterOrEqual(t, actual.CreatedAt.Unix(), now.Unix(), "CreatedAt should be greater than now")
-	assert.GreaterOrEqual(t, actual.UpdatedAt.Unix(), now.Unix(), "UpdatedAt should be greater than now")
+	utils.AssertCreated(t, expected.Model, actual.Model, now)
 }
 
 func AssertHiveUpdated(t *testing.T, expected, actual entity.Hive, now time.Time) {
 	AssertHive(t, expected, actual)
-	assert.LessOrEqual(t, actual.CreatedAt.Unix(), now.Unix(), "CreatedAt should be less than now")
-	assert.GreaterOrEqual(t, actual.UpdatedAt.Unix(), now.Unix(), "UpdatedAt should be greater than now")
+	utils.AssertUpdated(t, expected.Model, actual.Model, now)
 }

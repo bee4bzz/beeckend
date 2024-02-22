@@ -6,10 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/hive/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/gaetanDubuc/beeckend/internal/utils"
+	"github.com/gaetanDubuc/beeckend/pkg/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
@@ -22,20 +24,13 @@ const (
 
 type RepositoryTestSuite struct {
 	suite.Suite
-	Repository *Repository
+	Repository *repository.Repository[entity.Hive]
 	Hive       entity.Hive
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryTestSuite) SetupSuite() {
-	db, err := gorm.Open(sqlite.Open(dbName), &utils.GormConfig)
-
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	// Migrate the schema
-	db.AutoMigrate(&entity.Hive{}, &entity.HiveNote{})
+	db := db.InitGorm(sqlite.Open(dbName))
 	suite.Repository = NewRepository(db)
 }
 

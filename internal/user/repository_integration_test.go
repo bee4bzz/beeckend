@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/gaetanDubuc/beeckend/internal/user/testutils"
@@ -28,14 +29,7 @@ type RepositoryTestSuite struct {
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryTestSuite) SetupSuite() {
-	db, err := gorm.Open(sqlite.Open(dbName), &utils.GormConfig)
-
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	// Migrate the schema
-	db.AutoMigrate(&entity.User{})
+	db := db.InitGorm(sqlite.Open(dbName))
 	suite.Repository = NewRepository(db)
 }
 

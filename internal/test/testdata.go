@@ -11,21 +11,17 @@ var (
 		Model: gorm.Model{
 			ID: 1,
 		},
-		Name:  utils.ValidName(),
-		Email: utils.ValidEmail(),
-		Cheptels: []entity.Cheptel{
-			ValidCheptel,
-		},
+		Name:     utils.ValidName(),
+		Email:    utils.ValidEmail(),
+		Cheptels: []entity.Cheptel{},
 	}
 
 	ValidCheptel = entity.Cheptel{
 		Model: gorm.Model{
 			ID: 1,
 		},
-		Name: utils.ValidName(),
-		Hives: []entity.Hive{
-			ValidHive,
-		},
+		Name:  utils.ValidName(),
+		Users: []entity.User{},
 	}
 
 	ValidHive = entity.Hive{
@@ -34,7 +30,6 @@ var (
 		},
 		Name:      utils.ValidName(),
 		CheptelID: 1,
-		Notes:     []entity.HiveNote{ValidHiveNote},
 	}
 
 	ValidHiveNote = entity.HiveNote{
