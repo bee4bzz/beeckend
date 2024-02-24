@@ -1,4 +1,4 @@
-package user
+package repository
 
 import (
 	"github.com/gaetanDubuc/beeckend/internal/entity"
@@ -6,18 +6,18 @@ import (
 	"gorm.io/gorm"
 )
 
-type Repository struct {
+type GormRepository struct {
 	*repository.Repository[entity.User]
 }
 
-func NewRepository(db *gorm.DB) *Repository {
-	return &Repository{
+func NewGormRepository(db *gorm.DB) *GormRepository {
+	return &GormRepository{
 		Repository: repository.NewRepository[entity.User](db),
 	}
 }
 
 // Retrieve user from the database
-func (r *Repository) Get(ID uint) (entity.User, error) {
+func (r *GormRepository) Get(ID uint) (entity.User, error) {
 	var user entity.User
 	err := r.DB.Model(&entity.User{}).Preload(entity.CheptelsKey).First(&user, ID).Error
 	return user, err

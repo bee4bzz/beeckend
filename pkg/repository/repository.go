@@ -38,10 +38,11 @@ func (r *Repository[T]) Create(entity T) (T, error) {
 
 // Update a entity in the database
 func (r *Repository[T]) Update(entity T) (T, error) {
+	var empty T
 	if err := entity.Validate(); err != nil {
-		return entity, err
+		return empty, err
 	}
-	err := r.DB.Save(&entity).Error
+	err := r.DB.Model(&entity).Updates(&entity).Error
 	return entity, err
 }
 

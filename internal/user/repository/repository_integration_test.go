@@ -1,12 +1,10 @@
-package user
+package repository
 
 import (
 	"fmt"
 	"os"
 	"testing"
 	"time"
-
-	zaplog "github.com/gaetanDubuc/beeckend/pkg/log"
 
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
@@ -25,15 +23,14 @@ const (
 
 type RepositoryTestSuite struct {
 	suite.Suite
-	Repository *Repository
+	Repository *GormRepository
 	User       entity.User
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryTestSuite) SetupSuite() {
-	logger, _ := zaplog.NewForTest()
-	db := db.NewGormAutoMigrate(sqlite.Open(dbName), logger)
-	suite.Repository = NewRepository(db)
+	db := db.NewGormForTest(sqlite.Open(dbName))
+	suite.Repository = NewGormRepository(db)
 }
 
 // this function executes after all tests executed

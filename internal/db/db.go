@@ -1,26 +1,29 @@
 package db
 
 import (
+	"log"
+	"os"
 	"time"
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	"github.com/gaetanDubuc/beeckend/internal/log"
+	l "github.com/gaetanDubuc/beeckend/internal/log"
 	"github.com/gaetanDubuc/beeckend/internal/utils"
 	zaplog "github.com/gaetanDubuc/beeckend/pkg/log"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-func NewLogger() log.Logger {
+func NewLogger() l.Logger {
 	config, err := utils.LoadConfig(".")
 
 	if err != nil {
 		panic("failed to load config")
 	}
 
-	var logger log.Logger
+	var logger l.Logger
 	if config.AppEnv == "development" {
 		logger = zaplog.NewProduction()
 	} else {
@@ -29,12 +32,13 @@ func NewLogger() log.Logger {
 	return logger
 }
 
-func NewGorm(dial gorm.Dialector, logger log.Logger) *gorm.DB {
+func NewGorm(dial gorm.Dialector, logger logger.Interface) *gorm.DB {
 	GormConfig := gorm.Config{
 		NowFunc: func() time.Time {
 			// Spécifier la localisation temporelle que vous souhaitez utiliser
 			return time.Now().UTC() // Par exemple, UTC
 		},
+		Logger: logger,
 	}
 	db, err := gorm.Open(dial, &GormConfig)
 
@@ -45,15 +49,18 @@ func NewGorm(dial gorm.Dialector, logger log.Logger) *gorm.DB {
 	return db
 }
 
-func NewGormAutoMigrate(dial gorm.Dialector, logger log.Logger) *gorm.DB {
-	db := NewGorm(dial, logger)
+func NewGormForTest(dial gorm.Dialector) *gorm.DB {
+	db := NewGorm(dial, logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{},
+	))
 
 	db.AutoMigrate(&entity.User{}, &entity.Cheptel{}, &entity.Hive{}, &entity.CheptelNote{}, &entity.HiveNote{}, &entity.Album{})
 	return db
 }
 
-func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, logger log.Logger) *gorm.DB {
-	db := NewGorm(dial, logger)
+func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, log l.Logger) *gorm.DB {
+	db := NewGorm(dial, logger.Default)
 
 	// make migration programmaticaly
 	m, err := migrate.New(
@@ -61,10 +68,10 @@ func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, logg
 		databaseURL)
 
 	if err != nil {
-		logger.Error("failed to create a new migrate instance: ", err)
+		log.Error("failed to create a new migrate instance: ", err)
 	}
 	if err := m.Up(); err != nil {
-		logger.Error("failed to migrate up: ", err)
+		log.Error("failed to migrate up: ", err)
 	}
 	return db
 }
