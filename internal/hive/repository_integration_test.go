@@ -11,6 +11,7 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/hive/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/gaetanDubuc/beeckend/internal/utils"
+	zaplog "github.com/gaetanDubuc/beeckend/pkg/log"
 	"github.com/gaetanDubuc/beeckend/pkg/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -30,7 +31,8 @@ type RepositoryTestSuite struct {
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryTestSuite) SetupSuite() {
-	db := db.InitGorm(sqlite.Open(dbName))
+	logger, _ := zaplog.NewForTest()
+	db := db.NewGormAutoMigrate(sqlite.Open(dbName), logger)
 	suite.Repository = NewRepository(db)
 }
 
