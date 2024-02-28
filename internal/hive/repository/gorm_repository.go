@@ -7,11 +7,11 @@ import (
 )
 
 type GormRepository struct {
-	*repository.Repository[entity.User]
+	*repository.Repository[entity.Hive]
 }
 
 func NewGormRepository(db *gorm.DB) *GormRepository {
 	return &GormRepository{
-		Repository: repository.NewRepository[entity.User](db),
+		Repository: repository.NewRepository[entity.Hive](db),
 	}
 }
