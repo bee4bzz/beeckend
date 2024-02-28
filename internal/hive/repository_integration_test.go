@@ -32,8 +32,9 @@ type RepositoryTestSuite struct {
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryTestSuite) SetupSuite() {
-	suite.ctx = db.NewContextForTest(sqlite.Open(dbName))
-	suite.Repository = NewRepository()
+	suite.ctx = context.Background()
+	db := db.NewGormForTest(sqlite.Open(dbName))
+	suite.Repository = NewRepository(db)
 }
 
 // this function executes after all tests executed
@@ -78,13 +79,13 @@ func (suite *RepositoryTestSuite) TestInvalidUpdate() {
 }
 
 func (suite *RepositoryTestSuite) TestGet() {
-	hive, err := suite.Repository.Get(suite.ctx, suite.Hive.ID)
+	hive, err := suite.Repository.Get(suite.ctx, suite.Hive)
 	assert.NoError(suite.T(), err)
 	testutils.AssertHive(suite.T(), suite.Hive, hive)
 }
 
 func (suite *RepositoryTestSuite) TestNoRowGet() {
-	hive, err := suite.Repository.Get(suite.ctx, 1000)
+	hive, err := suite.Repository.Get(suite.ctx, entity.Hive{Model: gorm.Model{ID: 1000}})
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 	assert.Empty(suite.T(), hive)
 }
@@ -92,7 +93,7 @@ func (suite *RepositoryTestSuite) TestNoRowGet() {
 func (suite *RepositoryTestSuite) TestSoftDelete() {
 	err := suite.Repository.SoftDelete(suite.ctx, suite.Hive)
 	assert.NoError(suite.T(), err)
-	hive, err := suite.Repository.Get(suite.ctx, suite.Hive.ID)
+	hive, err := suite.Repository.Get(suite.ctx, suite.Hive)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 	assert.Empty(suite.T(), hive)
 }

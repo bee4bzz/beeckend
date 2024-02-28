@@ -20,10 +20,10 @@ func AssertUser(t *testing.T, expected, actual entity.User) {
 
 func AssertUserCreated(t *testing.T, expected, actual entity.User, now time.Time) {
 	AssertUser(t, expected, actual)
-	utils.AssertCreated(t, expected.Model, actual.Model, now)
+	utils.AssertCreated(t, actual.Model, now)
 }
 
 func AssertUserUpdated(t *testing.T, expected, actual entity.User, now time.Time) {
 	AssertUser(t, expected, actual)
-	utils.AssertUpdated(t, expected.Model, actual.Model, now)
+	utils.AssertUpdated(t, actual.Model, now)
 }

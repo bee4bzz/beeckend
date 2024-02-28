@@ -19,10 +19,10 @@ func AssertHive(t *testing.T, expected, actual entity.Hive) {
 
 func AssertHiveCreated(t *testing.T, expected, actual entity.Hive, now time.Time) {
 	AssertHive(t, expected, actual)
-	utils.AssertCreated(t, expected.Model, actual.Model, now)
+	utils.AssertCreated(t, actual.Model, now)
 }
 
 func AssertHiveUpdated(t *testing.T, expected, actual entity.Hive, now time.Time) {
 	AssertHive(t, expected, actual)
-	utils.AssertUpdated(t, expected.Model, actual.Model, now)
+	utils.AssertUpdated(t, actual.Model, now)
 }

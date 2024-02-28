@@ -9,8 +9,8 @@ import (
 
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
+	"github.com/gaetanDubuc/beeckend/internal/hive/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/test"
-	"github.com/gaetanDubuc/beeckend/internal/user/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	dbName = "user.db"
+	dbName = "hive.db"
 )
 
 type RepositoryTestSuite struct {
@@ -44,29 +44,29 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 
 func (suite *RepositoryTestSuite) TestCreate() {
 	now := time.Now()
-	err := suite.Repository.Create(suite.ctx, &test.ValidUser)
+	err := suite.Repository.Create(suite.ctx, &test.ValidHive)
 	assert.NoError(suite.T(), err)
-	utils.AssertCreated(suite.T(), test.ValidUser.Model, now)
+	utils.AssertCreated(suite.T(), test.ValidHive.Model, now)
 }
 
 func (suite *RepositoryTestSuite) TestUpdate() {
 	now := time.Now()
-	user := entity.User{Model: gorm.Model{ID: test.ValidUser.ID()}, Name: "new name"}
+	user := entity.Hive{Model: gorm.Model{ID: test.ValidHive.ID()}, Name: "new name"}
 	err := suite.Repository.Update(suite.ctx, &user)
 	assert.NoError(suite.T(), err)
-	test.ValidUser.Name = "new name"
-	testutils.AssertUserUpdated(suite.T(), test.ValidUser, user, now)
+	test.ValidHive.Name = "new name"
+	testutils.AssertHiveUpdated(suite.T(), test.ValidHive, user, now)
 }
 
 func (suite *RepositoryTestSuite) TestGet() {
-	user := entity.User{Model: gorm.Model{ID: test.ValidUser.ID()}}
+	user := entity.Hive{Model: gorm.Model{ID: test.ValidHive.ID()}}
 	err := suite.Repository.Get(suite.ctx, &user)
 	assert.NoError(suite.T(), err)
-	testutils.AssertUser(suite.T(), test.ValidUser, user)
+	testutils.AssertHive(suite.T(), test.ValidHive, user)
 }
 
 func (suite *RepositoryTestSuite) TestSoftDelete() {
-	user := entity.User{Model: gorm.Model{ID: 100}}
+	user := entity.Hive{Model: gorm.Model{ID: 100}}
 	suite.Repository.Create(suite.ctx, &user)
 	err := suite.Repository.SoftDelete(suite.ctx, &user)
 	assert.NoError(suite.T(), err)

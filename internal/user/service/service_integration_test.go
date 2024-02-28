@@ -10,8 +10,8 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
+	schema "github.com/gaetanDubuc/beeckend/internal/user"
 	"github.com/gaetanDubuc/beeckend/internal/user/repository"
-	"github.com/gaetanDubuc/beeckend/internal/user/schema"
 	"github.com/gaetanDubuc/beeckend/internal/user/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -54,6 +54,18 @@ func (suite *RepositoryTestSuite) TestUpdate() {
 		Email: test.ValidUser.Email,
 		Name:  "new name",
 	}, user, now)
+}
+
+func (suite *RepositoryTestSuite) TestUpdateNotFound() {
+	user, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{UserID: 3, Name: "new name"})
+	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
+	assert.Empty(suite.T(), user)
+}
+
+func (suite *RepositoryTestSuite) TestUpdateInvalid() {
+	user, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{})
+	assert.ErrorIs(suite.T(), err, gorm.ErrMissingWhereClause)
+	assert.Empty(suite.T(), user)
 }
 
 func TestRepositoryTestSuite(t *testing.T) {

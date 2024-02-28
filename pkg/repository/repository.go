@@ -21,38 +21,27 @@ func NewRepository[T Entity](db *gorm.DB) *Repository[T] {
 }
 
 // Retrieve entity from the database
-func (r *Repository[T]) Get(ctx context.Context, entity T) (T, error) {
-	var empty T
-	err := r.db.WithContext(ctx).Model(&empty).First(&entity).Error
-	if err != nil {
-		return empty, err
-	}
-	return entity, err
+func (r *Repository[T]) Get(ctx context.Context, entity Entity) error {
+	return r.db.WithContext(ctx).Model(entity).First(entity).Error
 }
 
 // Create a new entity in the database
-func (r *Repository[T]) Create(ctx context.Context, entity T) (T, error) {
-	var empty T
+func (r *Repository[T]) Create(ctx context.Context, entity Entity) error {
 	err := entity.Validate()
 	if err != nil {
-		return empty, err
+		return err
 	}
-	err = r.db.WithContext(ctx).Create(&entity).Error
-	if err != nil {
-		return empty, err
-	}
-	return entity, err
+	return r.db.WithContext(ctx).Create(entity).Error
 }
 
 // Update a entity in the database
-func (r *Repository[T]) Update(ctx context.Context, entity T) (T, error) {
-	var empty T
+func (r *Repository[T]) Update(ctx context.Context, entity Entity) error {
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&entity).Updates(&entity).Error
+		err := tx.Model(entity).Updates(entity).Error
 		if err != nil {
 			return err
 		}
-		err = tx.Model(&empty).First(&entity).Error
+		err = tx.Model(entity).First(entity).Error
 		if err != nil {
 			return err
 		}
@@ -62,17 +51,17 @@ func (r *Repository[T]) Update(ctx context.Context, entity T) (T, error) {
 		return nil
 	})
 	if err != nil {
-		return empty, err
+		return err
 	}
-	return entity, nil
+	return nil
 }
 
 // Delete a entity from the database
-func (r *Repository[T]) SoftDelete(ctx context.Context, entity T) error {
-	return r.db.WithContext(ctx).Delete(&entity).Error
+func (r *Repository[T]) SoftDelete(ctx context.Context, entity Entity) error {
+	return r.db.WithContext(ctx).Model(entity).Delete(entity).Error
 }
 
 // Hard delete a entity from the database
-func (r *Repository[T]) HardDelete(ctx context.Context, entity T) error {
-	return r.db.WithContext(ctx).Unscoped().Delete(&entity).Error
+func (r *Repository[T]) HardDelete(ctx context.Context, entity Entity) error {
+	return r.db.WithContext(ctx).Unscoped().Model(entity).Delete(entity).Error
 }
