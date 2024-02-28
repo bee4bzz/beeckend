@@ -1,24 +1,27 @@
 package cheptel
 
 import (
+	"context"
+
 	"github.com/gaetanDubuc/beeckend/internal/entity"
+	dbcontext "github.com/gaetanDubuc/beeckend/pkg/dbcontext"
 	"github.com/gaetanDubuc/beeckend/pkg/repository"
-	"gorm.io/gorm"
 )
 
 type Repository struct {
 	*repository.Repository[entity.Cheptel]
 }
 
-func NewRepository(db *gorm.DB) *Repository {
+func NewRepository() *Repository {
 	return &Repository{
-		Repository: repository.NewRepository[entity.Cheptel](db),
+		Repository: repository.NewRepository[entity.Cheptel](),
 	}
 }
 
 // Retrieve Hive from the database
-func (r *Repository) Get(ID uint) (entity.Cheptel, error) {
+func (r *Repository) Get(ctx context.Context, ID uint) (entity.Cheptel, error) {
+	db := dbcontext.FromContext(ctx)
 	var Cheptel entity.Cheptel
-	err := r.DB.Model(&entity.Cheptel{}).Preload(entity.UsersKey).First(&Cheptel, ID).Error
+	err := db.Model(&entity.Cheptel{}).Preload(entity.UsersKey).First(&Cheptel, ID).Error
 	return Cheptel, err
 }

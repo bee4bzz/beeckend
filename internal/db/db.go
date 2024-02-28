@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	l "github.com/gaetanDubuc/beeckend/internal/log"
 	"github.com/gaetanDubuc/beeckend/internal/utils"
+	dbcontext "github.com/gaetanDubuc/beeckend/pkg/dbcontext"
 	zaplog "github.com/gaetanDubuc/beeckend/pkg/log"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
@@ -46,7 +48,7 @@ func NewGorm(dial gorm.Dialector, logger logger.Interface) *gorm.DB {
 		panic("failed to connect database")
 	}
 
-	return db
+	return db.Session(&gorm.Session{})
 }
 
 func NewGormForTest(dial gorm.Dialector) *gorm.DB {
@@ -74,4 +76,8 @@ func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, log 
 		log.Error("failed to migrate up: ", err)
 	}
 	return db
+}
+
+func NewContextForTest(dial gorm.Dialector) context.Context {
+	return dbcontext.NewContextWithDB(NewGormForTest(dial))
 }

@@ -9,6 +9,7 @@ import (
 
 const (
 	UsersKey = "Users"
+	HivesKey = "Hives"
 )
 
 type Cheptel struct {

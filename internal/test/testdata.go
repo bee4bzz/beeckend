@@ -11,33 +11,34 @@ var (
 		Model: gorm.Model{
 			ID: 1,
 		},
-		Name:     utils.ValidName(),
-		Email:    utils.ValidEmail(),
-		Cheptels: []entity.Cheptel{},
+		Name:  "ValidUser",
+		Email: utils.ValidEmail(),
 	}
 
 	ValidCheptel = entity.Cheptel{
 		Model: gorm.Model{
-			ID: 1,
+			ID: 2,
 		},
-		Name:  utils.ValidName(),
-		Users: []entity.User{},
+		Name: "ValidCheptel",
+		Hives: []entity.Hive{
+			ValidHive,
+		},
 	}
 
 	ValidHive = entity.Hive{
 		Model: gorm.Model{
-			ID: 1,
+			ID: 3,
 		},
-		Name:      utils.ValidName(),
-		CheptelID: 1,
+		Name:      "ValidHive",
+		CheptelID: 2,
 	}
 
 	ValidHiveNote = entity.HiveNote{
 		Model: gorm.Model{
-			ID: 1,
+			ID: 4,
 		},
-		HiveID:    1,
-		Name:      utils.ValidName(),
+		HiveID:    3,
+		Name:      "ValidHiveNote",
 		Operation: utils.ValidName(),
 	}
 )

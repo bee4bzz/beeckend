@@ -1,12 +1,15 @@
 package service
 
-import "github.com/gaetanDubuc/beeckend/internal/entity"
+import (
+	"context"
+
+	"github.com/gaetanDubuc/beeckend/internal/entity"
+	"github.com/gaetanDubuc/beeckend/internal/user/schema"
+	"gorm.io/gorm"
+)
 
 type Repository interface {
-	Create(user entity.User) (entity.User, error)
-	Update(user entity.User) (entity.User, error)
-	Get(ID uint) (entity.User, error)
-	SoftDelete(user entity.User) error
+	Update(ctx context.Context, user entity.User) (entity.User, error)
 }
 
 type Service struct {
@@ -19,6 +22,16 @@ func NewService(repository Repository) *Service {
 	}
 }
 
-func (s *Service) Update(user entity.User) (entity.User, error) {
-
+// Update updates a user
+//
+// userID is the ID of the user that's updating
+func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.User, error) {
+	user := entity.User{
+		Model: gorm.Model{
+			ID: req.UserID,
+		},
+		Name: req.Name,
+	}
+	return s.Repository.Update(ctx, user)
 }
+

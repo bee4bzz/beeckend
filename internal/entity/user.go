@@ -17,6 +17,10 @@ type User struct {
 	Cheptels []Cheptel `gorm:"many2many:user_cheptels;constraint:OnDelete:CASCADE;"`
 }
 
+func (u User) ID() uint {
+	return u.Model.ID
+}
+
 // Validate User structure.
 func (u User) Validate() error {
 	return validation.ValidateStruct(&u,
