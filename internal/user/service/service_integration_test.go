@@ -10,8 +10,8 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
-	schema "github.com/gaetanDubuc/beeckend/internal/user"
 	"github.com/gaetanDubuc/beeckend/internal/user/repository"
+	"github.com/gaetanDubuc/beeckend/internal/user/schema"
 	"github.com/gaetanDubuc/beeckend/internal/user/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -46,10 +46,10 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 
 func (suite *RepositoryTestSuite) TestUpdate() {
 	now := time.Now()
-	user, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{UserID: test.ValidUser.ID(), Name: "new name"})
+	user, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{UserID: test.ValidUser.ID, Name: "new name"})
 	assert.NoError(suite.T(), err)
 	testutils.AssertUserUpdated(suite.T(), entity.User{Model: gorm.Model{
-		ID: test.ValidUser.ID(),
+		ID: test.ValidUser.ID,
 	},
 		Email: test.ValidUser.Email,
 		Name:  "new name",

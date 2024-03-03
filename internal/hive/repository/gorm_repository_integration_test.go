@@ -51,7 +51,7 @@ func (suite *RepositoryTestSuite) TestCreate() {
 
 func (suite *RepositoryTestSuite) TestUpdate() {
 	now := time.Now()
-	user := entity.Hive{Model: gorm.Model{ID: test.ValidHive.ID()}, Name: "new name"}
+	user := entity.Hive{Model: gorm.Model{ID: test.ValidHive.ID}, Name: "new name"}
 	err := suite.Repository.Update(suite.ctx, &user)
 	assert.NoError(suite.T(), err)
 	test.ValidHive.Name = "new name"
@@ -59,7 +59,7 @@ func (suite *RepositoryTestSuite) TestUpdate() {
 }
 
 func (suite *RepositoryTestSuite) TestGet() {
-	user := entity.Hive{Model: gorm.Model{ID: test.ValidHive.ID()}}
+	user := entity.Hive{Model: gorm.Model{ID: test.ValidHive.ID}}
 	err := suite.Repository.Get(suite.ctx, &user)
 	assert.NoError(suite.T(), err)
 	testutils.AssertHive(suite.T(), test.ValidHive, user)

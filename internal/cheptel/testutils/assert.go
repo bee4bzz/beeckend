@@ -21,10 +21,10 @@ func AssertCheptel(t *testing.T, expected, actual entity.Cheptel) {
 
 func AssertCheptelCreated(t *testing.T, expected, actual entity.Cheptel, now time.Time) {
 	AssertCheptel(t, expected, actual)
-	utils.AssertCreated(t, expected.Model, actual.Model, now)
+	utils.AssertCreated(t, actual.Model, now)
 }
 
 func AssertCheptelUpdated(t *testing.T, expected, actual entity.Cheptel, now time.Time) {
 	AssertCheptel(t, expected, actual)
-	utils.AssertUpdated(t, expected.Model, actual.Model, now)
+	utils.AssertUpdated(t, actual.Model, now)
 }

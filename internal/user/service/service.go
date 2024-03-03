@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	schema "github.com/gaetanDubuc/beeckend/internal/user"
+	"github.com/gaetanDubuc/beeckend/internal/user/schema"
 	"github.com/gaetanDubuc/beeckend/pkg/repository"
 	"gorm.io/gorm"
 )
@@ -24,8 +24,6 @@ func NewService(repository Repository) *Service {
 }
 
 // Update updates a user
-//
-// userID is the ID of the user that's updating
 func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.User, error) {
 	user := &entity.User{
 		Model: gorm.Model{

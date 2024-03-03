@@ -20,6 +20,7 @@ type Hive struct {
 // Validate User structure.
 func (h Hive) Validate() error {
 	return validation.ValidateStruct(&h,
+		validation.Field(&h.ID, validation.Required),
 		validation.Field(&h.Name, validation.Required),
 		validation.Field(&h.CheptelID, validation.Required),
 		validation.Field(&h.Notes),

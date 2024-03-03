@@ -51,7 +51,7 @@ func (suite *RepositoryTestSuite) TestCreate() {
 
 func (suite *RepositoryTestSuite) TestUpdate() {
 	now := time.Now()
-	user := entity.User{Model: gorm.Model{ID: test.ValidUser.ID()}, Name: "new name"}
+	user := entity.User{Model: gorm.Model{ID: test.ValidUser.ID}, Name: "new name"}
 	err := suite.Repository.Update(suite.ctx, &user)
 	assert.NoError(suite.T(), err)
 	test.ValidUser.Name = "new name"
@@ -59,7 +59,7 @@ func (suite *RepositoryTestSuite) TestUpdate() {
 }
 
 func (suite *RepositoryTestSuite) TestGet() {
-	user := entity.User{Model: gorm.Model{ID: test.ValidUser.ID()}}
+	user := entity.User{Model: gorm.Model{ID: test.ValidUser.ID}}
 	err := suite.Repository.Get(suite.ctx, &user)
 	assert.NoError(suite.T(), err)
 	testutils.AssertUser(suite.T(), test.ValidUser, user)
