@@ -7,10 +7,10 @@ import (
 
 type Album struct {
 	gorm.Model
-	Name        string   `gorm:"not null"`
+	Name        string   `gorm:"index:idx_name_owner_id,unique;not null"`
 	Paths       []string `gorm:"type:text[];not null"`
 	Observation *string
-	OwnerID     uint   `gorm:"not null"`
+	OwnerID     uint   `gorm:"index:idx_name_owner_id,unique;not null"`
 	OwnerType   string `gorm:"not null"`
 }
 

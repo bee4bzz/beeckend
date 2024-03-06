@@ -20,6 +20,10 @@ func NewRepository[T Validator](db *gorm.DB) *Repository[T] {
 	}
 }
 
+func (r *Repository[T]) DB() *gorm.DB {
+	return r.db
+}
+
 // Retrieve entity from the database
 func (r *Repository[T]) Get(ctx context.Context, entity *T) error {
 	err := r.db.WithContext(ctx).Where(entity).Model(entity).First(entity).Error

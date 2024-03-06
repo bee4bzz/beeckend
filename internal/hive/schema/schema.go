@@ -5,14 +5,6 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-func Validate(structPtr any, UserID, CheptelID, HiveID *uint) error {
-	return validation.ValidateStruct(structPtr,
-		validation.Field(UserID, validation.Required),
-		validation.Field(CheptelID, validation.Required),
-		validation.Field(HiveID, validation.Required),
-	)
-}
-
 type GetRequest struct {
 	UserID    uint `json:"-"`
 	CheptelID uint `json:"-"`
@@ -21,6 +13,20 @@ type GetRequest struct {
 
 func (g GetRequest) Validate() error {
 	return Validate(&g, &g.UserID, &g.CheptelID, &g.HiveID)
+}
+
+type CreateRequest struct {
+	UserID    uint   `json:"-"`
+	HiveID    uint   `json:"hive_ID"`
+	CheptelID uint   `json:"cheptel_ID"`
+	Name      string `json:"name"`
+}
+
+func (u CreateRequest) Validate() error {
+	return validation.ValidateStruct(&u,
+		validation.Field(&u.UserID, validation.Required),
+		validation.Field(&u.CheptelID, validation.Required),
+	)
 }
 
 type UpdateRequest struct {
@@ -43,4 +49,12 @@ func (u UpdateRequest) CopyWith(new UpdateRequest) UpdateRequest {
 		NewCheptelID: utils.UintOr(new.NewCheptelID, u.NewCheptelID),
 		NewName:      utils.StringOr(new.NewName, u.NewName),
 	}
+}
+
+func Validate(structPtr any, UserID, CheptelID, HiveID *uint) error {
+	return validation.ValidateStruct(structPtr,
+		validation.Field(UserID, validation.Required),
+		validation.Field(CheptelID, validation.Required),
+		validation.Field(HiveID, validation.Required),
+	)
 }

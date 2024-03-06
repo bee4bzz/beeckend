@@ -10,7 +10,7 @@ import (
 )
 
 func AssertHive(t *testing.T, expected, actual entity.Hive) {
-	assert.NotEmpty(t, actual.ID, "ID should not be empty")
+	assert.Equal(t, expected.ID, actual.ID, "ID should not be empty")
 	assert.NotEmpty(t, actual.CreatedAt, "CreatedAt should not be empty")
 	assert.NotEmpty(t, actual.UpdatedAt, "UpdatedAt should not be empty")
 	assert.Equal(t, expected.Name, actual.Name, "Name should be equal")

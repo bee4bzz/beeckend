@@ -25,13 +25,14 @@ const (
 type RepositoryTestSuite struct {
 	suite.Suite
 	ctx        context.Context
+	db         *gorm.DB
 	Repository *GormRepository
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
-	db := db.NewGormForTest(sqlite.Open(dbName))
+	suite.db = db.NewGormForTest(sqlite.Open(dbName))
 	suite.Repository = NewGormRepository(db)
 }
 
@@ -40,6 +41,15 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 	if err := os.Remove(dbName); err != nil {
 		panic(fmt.Errorf("Error while deleting the database file: %s", err))
 	}
+}
+
+func (suite *RepositoryTestSuite) SetupTest() {
+	err := suite.db.Create(&test.ValidHive).Error
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *RepositoryTestSuite) TearDownTest() {
+	suite.db.Exec("DELETE FROM hives")
 }
 
 func (suite *RepositoryTestSuite) TestCreate() {
@@ -72,6 +82,14 @@ func (suite *RepositoryTestSuite) TestSoftDelete() {
 	assert.NoError(suite.T(), err)
 	err = suite.Repository.Get(suite.ctx, &user)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
+}
+
+func (suite *RepositoryTestSuite) TestQuery() {
+	user := entity.User{Model: gorm.Model{ID: test.ValidUser.ID}}
+	err := suite.Repository.QueryByUser(suite.ctx, &user)
+	assert.NoError(suite.T(), err)
+	fmt.Print(user)
+	assert.Equal(suite.T(), 1, 0)
 }
 
 func TestRepositoryTestSuite(t *testing.T) {

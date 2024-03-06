@@ -12,15 +12,14 @@ const (
 
 type Hive struct {
 	gorm.Model
-	Name      string `gorm:"not null"`
-	CheptelID uint
+	Name      string     `gorm:"index:idx_name_cheptel_id,unique;not null"`
+	CheptelID uint       `gorm:"index:idx_name_cheptel_id,unique;not null"`
 	Notes     []HiveNote `gorm:"constraint:OnDelete:CASCADE;"`
 }
 
 // Validate User structure.
 func (h Hive) Validate() error {
 	return validation.ValidateStruct(&h,
-		validation.Field(&h.ID, validation.Required),
 		validation.Field(&h.Name, validation.Required),
 		validation.Field(&h.CheptelID, validation.Required),
 		validation.Field(&h.Notes),
@@ -29,8 +28,8 @@ func (h Hive) Validate() error {
 
 type HiveNote struct {
 	gorm.Model
-	HiveID      uint
-	Name        string `gorm:"not null"`
+	HiveID      uint   `gorm:"index:idx_name_hive_id,unique;not null"`
+	Name        string `gorm:"index:idx_name_hive_id,unique;not null"`
 	NBRisers    uint   `gorm:"not null"`
 	Operation   string `gorm:"not null"`
 	Observation *string
