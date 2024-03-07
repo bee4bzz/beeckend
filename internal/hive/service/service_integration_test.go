@@ -49,12 +49,11 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryTestSuite) SetupTest() {
-	err := suite.db.Create(&test.ValidHive).Error
-	assert.NoError(suite.T(), err)
+	db.Seed(suite.T(), suite.db)
 }
 
 func (suite *RepositoryTestSuite) TearDownTest() {
-	suite.db.Exec("DELETE FROM hives")
+	db.Clean(suite.T(), suite.db)
 }
 
 func (suite *RepositoryTestSuite) TestUpdate() {
@@ -146,12 +145,20 @@ func (suite *RepositoryTestSuite) TestCreate() {
 
 func (suite *RepositoryTestSuite) TestCreateFail() {
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
+	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 
 	validCreateReq := schema.CreateRequest{
 		UserID:    test.ValidUser.ID,
 		CheptelID: test.ValidHive.CheptelID,
 		HiveID:    test.ValidHive.ID,
+		Name:      "new name",
 	}
+
+	invalidCreateReq := validCreateReq.CopyWith(
+		schema.CreateRequest{
+			Name: "",
+		},
+	)
 
 	testcases := []struct {
 		name string
@@ -159,6 +166,7 @@ func (suite *RepositoryTestSuite) TestCreateFail() {
 		err  error
 	}{
 		{name: "An unknown user of the current cheptel should not be able to update the hive", req: validCreateReq, err: test.ErrMock},
+		{name: "Create an hive without a name should return an error", req: invalidCreateReq},
 		{name: "the request should be invalid", req: schema.CreateRequest{}},
 	}
 
@@ -171,6 +179,58 @@ func (suite *RepositoryTestSuite) TestCreateFail() {
 				assert.ErrorIs(t, err, tc.err)
 			}
 			assert.Empty(t, hive)
+		})
+	}
+}
+
+func (suite *RepositoryTestSuite) TestQueryByUser() {
+	hives, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
+		UserID: test.ValidUser.ID,
+	})
+
+	assert.NoError(suite.T(), err)
+	testutils.AssertHives(suite.T(), []entity.Hive{test.ValidHive}, hives)
+}
+
+func (suite *RepositoryTestSuite) TestDelete() {
+	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Twice()
+	req := schema.Request{
+		UserID:    test.ValidUser.ID,
+		CheptelID: test.ValidHive.CheptelID,
+		HiveID:    test.ValidHive.ID,
+	}
+	err := suite.Service.SoftDelete(suite.ctx, req)
+	assert.NoError(suite.T(), err)
+	_, err = suite.Service.Get(suite.ctx, req)
+	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
+}
+
+func (suite *RepositoryTestSuite) TestDeleteFail() {
+	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
+
+	validReq := schema.Request{
+		UserID:    test.ValidUser.ID,
+		CheptelID: test.ValidHive.CheptelID,
+		HiveID:    test.ValidHive.ID,
+	}
+
+	testcases := []struct {
+		name string
+		req  schema.Request
+		err  error
+	}{
+		{name: "An unknown user of the current cheptel should not be able to update the hive", req: validReq, err: test.ErrMock},
+		{name: "the request should be invalid", req: schema.Request{}},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			err := suite.Service.SoftDelete(suite.ctx, tc.req)
+			if tc.err == nil {
+				assert.Error(t, err)
+			} else {
+				assert.ErrorIs(t, err, tc.err)
+			}
 		})
 	}
 }

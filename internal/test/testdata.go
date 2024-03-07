@@ -11,8 +11,9 @@ var (
 		Model: gorm.Model{
 			ID: 1,
 		},
-		Name:  "ValidUser",
-		Email: utils.ValidEmail(),
+		Name:     "ValidUser",
+		Email:    utils.ValidEmail(),
+		Cheptels: []entity.Cheptel{ValidCheptel},
 	}
 
 	ValidCheptel = entity.Cheptel{

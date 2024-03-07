@@ -18,6 +18,13 @@ func NewGormRepository(db *gorm.DB) *GormRepository {
 	}
 }
 
-func (r *GormRepository) QueryByUser(ctx context.Context, user *entity.User) error {
-	return r.DB().WithContext(ctx).Preload(entity.HivesKey).Preload(entity.CheptelsKey).Find(user).Error
+func (r *GormRepository) QueryByUser(ctx context.Context, user entity.User, hives *[]entity.Hive) error {
+	err := r.DB().WithContext(ctx).Preload(entity.CheptelsKey + "." + entity.HivesKey).Find(&user).Error
+	if err != nil {
+		return err
+	}
+	for _, cheptel := range user.Cheptels {
+		*hives = append(*hives, cheptel.Hives...)
+	}
+	return err
 }

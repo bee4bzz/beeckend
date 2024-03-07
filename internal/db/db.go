@@ -34,6 +34,7 @@ func NewLogger() l.Logger {
 
 func NewGorm(dial gorm.Dialector, logger logger.Interface) *gorm.DB {
 	GormConfig := gorm.Config{
+		TranslateError: true,
 		NowFunc: func() time.Time {
 			// Spécifier la localisation temporelle que vous souhaitez utiliser
 			return time.Now().UTC() // Par exemple, UTC

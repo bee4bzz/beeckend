@@ -11,7 +11,6 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/hive/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/test"
-	"github.com/gaetanDubuc/beeckend/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
@@ -33,7 +32,7 @@ type RepositoryTestSuite struct {
 func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.db = db.NewGormForTest(sqlite.Open(dbName))
-	suite.Repository = NewGormRepository(db)
+	suite.Repository = NewGormRepository(suite.db)
 }
 
 // this function executes after all tests executed
@@ -44,19 +43,37 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryTestSuite) SetupTest() {
-	err := suite.db.Create(&test.ValidHive).Error
-	assert.NoError(suite.T(), err)
+	db.Seed(suite.T(), suite.db)
 }
 
 func (suite *RepositoryTestSuite) TearDownTest() {
-	suite.db.Exec("DELETE FROM hives")
+	db.Clean(suite.T(), suite.db)
 }
 
 func (suite *RepositoryTestSuite) TestCreate() {
+	hive := entity.Hive{
+		Model: gorm.Model{
+			ID: 100,
+		},
+		Name:      "new hive",
+		CheptelID: test.ValidCheptel.ID,
+	}
+	hiveCopy := hive
 	now := time.Now()
-	err := suite.Repository.Create(suite.ctx, &test.ValidHive)
+	err := suite.Repository.Create(suite.ctx, &hive)
 	assert.NoError(suite.T(), err)
-	utils.AssertCreated(suite.T(), test.ValidHive.Model, now)
+	testutils.AssertHiveCreated(suite.T(), hiveCopy, hive, now)
+}
+
+func (suite *RepositoryTestSuite) TestCreateFail() {
+	tc := []entity.Hive{
+		test.ValidHive,
+		{CheptelID: test.ValidHive.CheptelID, Name: test.ValidHive.Name},
+	}
+	for _, c := range tc {
+		err := suite.Repository.Create(suite.ctx, &c)
+		assert.ErrorIs(suite.T(), err, gorm.ErrDuplicatedKey)
+	}
 }
 
 func (suite *RepositoryTestSuite) TestUpdate() {
@@ -85,11 +102,20 @@ func (suite *RepositoryTestSuite) TestSoftDelete() {
 }
 
 func (suite *RepositoryTestSuite) TestQuery() {
-	user := entity.User{Model: gorm.Model{ID: test.ValidUser.ID}}
-	err := suite.Repository.QueryByUser(suite.ctx, &user)
-	assert.NoError(suite.T(), err)
-	fmt.Print(user)
-	assert.Equal(suite.T(), 1, 0)
+	testcases := []struct {
+		entity.User
+		len int
+	}{
+		{test.ValidUser, 1},
+		{entity.User{Model: gorm.Model{ID: 100}}, 0},
+	}
+
+	for _, tc := range testcases {
+		hives := []entity.Hive{}
+		err := suite.Repository.QueryByUser(suite.ctx, tc.User, &hives)
+		assert.NoError(suite.T(), err)
+		assert.Len(suite.T(), hives, tc.len)
+	}
 }
 
 func TestRepositoryTestSuite(t *testing.T) {

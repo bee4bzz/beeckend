@@ -17,6 +17,13 @@ func AssertHive(t *testing.T, expected, actual entity.Hive) {
 	assert.Equal(t, expected.Notes, actual.Notes, "Notes should be equal")
 }
 
+func AssertHives(t *testing.T, expected, actual []entity.Hive) {
+	assert.Len(t, actual, len(expected))
+	for i := range expected {
+		AssertHive(t, expected[i], actual[i])
+	}
+}
+
 func AssertHiveCreated(t *testing.T, expected, actual entity.Hive, now time.Time) {
 	AssertHive(t, expected, actual)
 	utils.AssertCreated(t, actual.Model, now)

@@ -5,14 +5,24 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-type GetRequest struct {
+type Request struct {
 	UserID    uint `json:"-"`
 	CheptelID uint `json:"-"`
 	HiveID    uint `json:"-"`
 }
 
-func (g GetRequest) Validate() error {
+func (g Request) Validate() error {
 	return Validate(&g, &g.UserID, &g.CheptelID, &g.HiveID)
+}
+
+type QueryRequest struct {
+	UserID uint `json:"-"`
+}
+
+func (q QueryRequest) Validate() error {
+	return validation.ValidateStruct(&q,
+		validation.Field(&q.UserID, validation.Required),
+	)
 }
 
 type CreateRequest struct {
@@ -27,6 +37,15 @@ func (u CreateRequest) Validate() error {
 		validation.Field(&u.UserID, validation.Required),
 		validation.Field(&u.CheptelID, validation.Required),
 	)
+}
+
+func (u CreateRequest) CopyWith(new CreateRequest) CreateRequest {
+	return CreateRequest{
+		UserID:    utils.UintOr(new.UserID, u.UserID),
+		CheptelID: utils.UintOr(new.CheptelID, u.CheptelID),
+		HiveID:    utils.UintOr(new.HiveID, u.HiveID),
+		Name:      utils.StringOr(new.Name, u.Name),
+	}
 }
 
 type UpdateRequest struct {

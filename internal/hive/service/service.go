@@ -14,6 +14,7 @@ type CheptelManager interface {
 
 type Repository interface {
 	Get(ctx context.Context, hive *entity.Hive) error
+	QueryByUser(ctx context.Context, user entity.User, hives *[]entity.Hive) error
 	Create(ctx context.Context, hive *entity.Hive) error
 	Update(ctx context.Context, hive *entity.Hive) error
 	SoftDelete(ctx context.Context, hive *entity.Hive) error
@@ -31,7 +32,7 @@ func NewService(repository Repository, cheptelManager CheptelManager) *Service {
 	}
 }
 
-func (s *Service) Get(ctx context.Context, req schema.GetRequest) (entity.Hive, error) {
+func (s *Service) Get(ctx context.Context, req schema.Request) (entity.Hive, error) {
 	if err := req.Validate(); err != nil {
 		return entity.Hive{}, err
 	}
@@ -53,6 +54,21 @@ func (s *Service) Get(ctx context.Context, req schema.GetRequest) (entity.Hive, 
 	}
 
 	return hive, nil
+}
+
+func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]entity.Hive, error) {
+	if err := req.Validate(); err != nil {
+		return []entity.Hive{}, err
+	}
+
+	hives := []entity.Hive{}
+
+	err := s.Repository.QueryByUser(ctx, entity.User{Model: gorm.Model{ID: req.UserID}}, &hives)
+	if err != nil {
+		return []entity.Hive{}, err
+	}
+
+	return hives, nil
 }
 
 // Create creates an hive
@@ -87,12 +103,7 @@ func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.
 		return entity.Hive{}, err
 	}
 
-	_, err := s.Get(ctx, schema.GetRequest{
-		UserID:    req.UserID,
-		CheptelID: req.CheptelID,
-		HiveID:    req.HiveID,
-	})
-
+	err := s.cheptelManager.OnlyMember(ctx, req.CheptelID, req.UserID)
 	if err != nil {
 		return entity.Hive{}, err
 	}
@@ -120,17 +131,12 @@ func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.
 }
 
 // Delete deletes an hive
-func (s *Service) Delete(ctx context.Context, req schema.GetRequest) error {
+func (s *Service) SoftDelete(ctx context.Context, req schema.Request) error {
 	if err := req.Validate(); err != nil {
 		return err
 	}
 
-	_, err := s.Get(ctx, schema.GetRequest{
-		UserID:    req.UserID,
-		CheptelID: req.CheptelID,
-		HiveID:    req.HiveID,
-	})
-
+	err := s.cheptelManager.OnlyMember(ctx, req.CheptelID, req.UserID)
 	if err != nil {
 		return err
 	}
