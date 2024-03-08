@@ -32,30 +32,6 @@ func NewService(repository Repository, cheptelManager CheptelManager) *Service {
 	}
 }
 
-func (s *Service) Get(ctx context.Context, req schema.Request) (entity.Hive, error) {
-	if err := req.Validate(); err != nil {
-		return entity.Hive{}, err
-	}
-	err := s.cheptelManager.OnlyMember(ctx, req.CheptelID, req.UserID)
-	if err != nil {
-		return entity.Hive{}, err
-	}
-
-	hive := entity.Hive{
-		Model: gorm.Model{
-			ID: req.HiveID,
-		},
-		CheptelID: req.CheptelID,
-	}
-
-	err = s.Repository.Get(ctx, &hive)
-	if err != nil {
-		return entity.Hive{}, err
-	}
-
-	return hive, nil
-}
-
 func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]entity.Hive, error) {
 	if err := req.Validate(); err != nil {
 		return []entity.Hive{}, err

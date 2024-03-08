@@ -19,6 +19,7 @@ require (
 require (
 	ariga.io/atlas-go-sdk v0.2.3 // indirect
 	ariga.io/atlas-provider-gorm v0.3.1 // indirect
+	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect

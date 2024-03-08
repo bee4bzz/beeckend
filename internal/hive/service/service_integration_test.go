@@ -192,8 +192,14 @@ func (suite *RepositoryTestSuite) TestQueryByUser() {
 	testutils.AssertHives(suite.T(), []entity.Hive{test.ValidHive}, hives)
 }
 
+func (suite *RepositoryTestSuite) TestQueryByUserFail() {
+	hives, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{})
+	assert.Error(suite.T(), err)
+	assert.Empty(suite.T(), hives)
+}
+
 func (suite *RepositoryTestSuite) TestDelete() {
-	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Twice()
+	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 	req := schema.Request{
 		UserID:    test.ValidUser.ID,
 		CheptelID: test.ValidHive.CheptelID,
@@ -201,7 +207,7 @@ func (suite *RepositoryTestSuite) TestDelete() {
 	}
 	err := suite.Service.SoftDelete(suite.ctx, req)
 	assert.NoError(suite.T(), err)
-	_, err = suite.Service.Get(suite.ctx, req)
+	err = suite.db.Model(&test.ValidHive).First(&entity.Hive{}).Error
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 
@@ -219,7 +225,7 @@ func (suite *RepositoryTestSuite) TestDeleteFail() {
 		req  schema.Request
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to update the hive", req: validReq, err: test.ErrMock},
+		{name: "An unknown user of the current cheptel should not be able to delete the hive", req: validReq, err: test.ErrMock},
 		{name: "the request should be invalid", req: schema.Request{}},
 	}
 
