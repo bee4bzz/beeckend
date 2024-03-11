@@ -12,6 +12,14 @@ type Logger struct {
 	*zap.SugaredLogger
 }
 
+func (l *Logger) With(args ...interface{}) *Logger {
+	return &Logger{l.SugaredLogger.With(args...)}
+}
+
+func (l *Logger) Named(name string) *Logger {
+	return &Logger{l.SugaredLogger.Named(name)}
+}
+
 // New creates a new logger ready for production using the default configuration.
 func NewProduction() *Logger {
 	l, _ := zap.NewProduction()
@@ -31,7 +39,7 @@ func NewWithZap(l *zap.Logger) *Logger {
 
 // NewForTest returns a new logger and the corresponding observed logs which can be used in unit tests to verify log entries.
 func NewForTest() (*Logger, *observer.ObservedLogs) {
-	core, recorded := observer.New(zapcore.InfoLevel)
+	core, recorded := observer.New(zapcore.DebugLevel)
 	core = zapcore.NewTee(
 		core,
 		zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.Lock(os.Stdout), zapcore.DebugLevel),

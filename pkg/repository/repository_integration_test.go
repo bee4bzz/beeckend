@@ -14,38 +14,44 @@ import (
 )
 
 const (
-	dbName = "mock.db"
+	dbName = "Mock.db"
 )
 
 var (
 	err = fmt.Errorf("")
 )
 
-type mock struct {
+type MockChild struct {
 	gorm.Model
-	err  error
-	Attr int
+	MockID uint
 }
 
-func (m mock) Validate() error {
+type Mock struct {
+	gorm.Model
+	err        error
+	Attr       int
+	MockChilds []MockChild
+}
+
+func (m Mock) Validate() error {
 	return m.err
 }
 
 type RepositoryIntegrationSuite struct {
 	suite.Suite
 	ctx        context.Context
-	Repository *Repository[mock]
+	Repository *Repository[Mock]
 	db         *gorm.DB
-	mock       mock
+	Mock       Mock
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	db, _ := gorm.Open(sqlite.Open(dbName), &gorm.Config{TranslateError: true})
-	db.AutoMigrate(&mock{})
+	db.AutoMigrate(&Mock{}, &MockChild{})
 	suite.db = db
-	suite.Repository = NewRepository[mock](db)
+	suite.Repository = NewRepository[Mock](db)
 }
 
 // this function executes after all tests executed
@@ -56,18 +62,18 @@ func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
-	err := suite.db.Create(&mock{Model: gorm.Model{ID: 1}, Attr: 1}).Error
+	err := suite.db.Create(&Mock{Model: gorm.Model{ID: 1}, Attr: 1, MockChilds: []MockChild{{Model: gorm.Model{ID: 1}}}}).Error
 	assert.NoError(suite.T(), err)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
-	suite.db.Exec("DELETE FROM mocks")
+	suite.db.Exec("DELETE FROM Mocks")
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreate() {
 	t := suite.T()
 	now := time.Now()
-	m := mock{}
+	m := Mock{}
 	err := suite.Repository.Create(suite.ctx, &m)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, m.ID)
@@ -78,23 +84,23 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 	testcases := []struct {
 		name string
-		mock mock
+		Mock Mock
 		err  error
 	}{
 		{
 			name: "should fail when trying to create a duplicate",
-			mock: mock{Model: gorm.Model{ID: 1}},
+			Mock: Mock{Model: gorm.Model{ID: 1}},
 			err:  gorm.ErrDuplicatedKey,
 		},
 		{
 			name: "should fail when the model is invalid",
-			mock: mock{Model: gorm.Model{ID: 1}, err: err},
+			Mock: Mock{Model: gorm.Model{ID: 1}, err: err},
 			err:  err,
 		},
 	}
 	for _, tc := range testcases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			err := suite.Repository.Create(suite.ctx, &tc.mock)
+			err := suite.Repository.Create(suite.ctx, &tc.Mock)
 			assert.ErrorIs(t, err, tc.err)
 		})
 	}
@@ -103,36 +109,36 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	t := suite.T()
 	now := time.Now()
-	mock := &mock{
+	Mock := &Mock{
 		Model: gorm.Model{ID: 1},
 	}
-	err := suite.Repository.Update(suite.ctx, mock)
+	err := suite.Repository.Update(suite.ctx, Mock)
 	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, mock.UpdatedAt, now, "UpdatedAt should be greater than now")
-	assert.Greater(t, mock.UpdatedAt, mock.CreatedAt, "UpdatedAt should be greater than CreatedAt")
-	assert.Equal(t, 1, mock.Attr)
+	assert.GreaterOrEqual(t, Mock.UpdatedAt, now, "UpdatedAt should be greater than now")
+	assert.Greater(t, Mock.UpdatedAt, Mock.CreatedAt, "UpdatedAt should be greater than CreatedAt")
+	assert.Equal(t, 1, Mock.Attr)
 }
 
 func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 	testcases := []struct {
 		name string
-		mock mock
+		Mock Mock
 		err  error
 	}{
 		{
 			name: "should fail when model is invalid",
-			mock: mock{Model: gorm.Model{ID: 1}, err: err},
+			Mock: Mock{Model: gorm.Model{ID: 1}, err: err},
 			err:  err,
 		},
 		{
 			name: "should fail when model is empty",
-			mock: mock{},
+			Mock: Mock{},
 			err:  gorm.ErrMissingWhereClause,
 		},
 	}
 	for _, tc := range testcases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			err := suite.Repository.Update(suite.ctx, &tc.mock)
+			err := suite.Repository.Update(suite.ctx, &tc.Mock)
 			assert.ErrorIs(t, err, tc.err)
 		})
 	}
@@ -140,24 +146,26 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 
 func (suite *RepositoryIntegrationSuite) TestGet() {
 	t := suite.T()
-	m := mock{Model: gorm.Model{ID: 1}}
+	m := Mock{Model: gorm.Model{ID: 1}}
 	err := suite.Repository.Get(suite.ctx, &m)
 	assert.NoError(t, err)
 	assert.Equal(t, uint(1), m.ID)
+	assert.Equal(t, 1, m.Attr)
+	assert.Len(t, m.MockChilds, 1)
 	assert.NotEmpty(t, m.CreatedAt)
 	assert.NotEmpty(t, m.UpdatedAt)
 }
 
 func (suite *RepositoryIntegrationSuite) TestNoRowGet() {
 	t := suite.T()
-	m := mock{Model: gorm.Model{ID: 1000}}
+	m := Mock{Model: gorm.Model{ID: 1000}}
 	err := suite.Repository.Get(suite.ctx, &m)
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
 func (suite *RepositoryIntegrationSuite) TestSoftDelete() {
 	t := suite.T()
-	m := mock{
+	m := Mock{
 		Model: gorm.Model{ID: 1},
 	}
 	err := suite.Repository.SoftDelete(suite.ctx, &m)
@@ -168,14 +176,14 @@ func (suite *RepositoryIntegrationSuite) TestSoftDelete() {
 
 func (suite *RepositoryIntegrationSuite) TestInvalidSoftDelete() {
 	t := suite.T()
-	m := mock{}
+	m := Mock{}
 	err := suite.Repository.SoftDelete(suite.ctx, &m)
 	assert.ErrorIs(t, err, gorm.ErrMissingWhereClause)
 }
 
 func (suite *RepositoryIntegrationSuite) TestHardDelete() {
 	t := suite.T()
-	m := mock{
+	m := Mock{
 		Model: gorm.Model{ID: 1},
 	}
 	err := suite.Repository.HardDelete(suite.ctx, &m)

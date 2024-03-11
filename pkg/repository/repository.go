@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Validator interface {
@@ -35,7 +36,7 @@ func (r *Repository[T]) DB() *gorm.DB {
 // The entity passed as argument will be used as a filter to retrieve the entity.
 func (r *Repository[T]) Get(ctx context.Context, entity *T) error {
 	var empty T
-	err := r.db.WithContext(ctx).Model(&empty).Where(entity).First(&entity).Error
+	err := r.db.WithContext(ctx).Model(&empty).Preload(clause.Associations).Where(entity).First(&entity).Error
 	return err
 }
 
@@ -69,7 +70,7 @@ func (r *Repository[T]) Update(ctx context.Context, entity *T) error {
 			return err
 		}
 
-		err = tx.Model(entity).Where(entity).First(entity).Error
+		err = tx.Model(entity).Where(entity).Preload(clause.Associations).First(entity).Error
 		if err != nil {
 			return err
 		}

@@ -24,6 +24,8 @@ var (
 		Hives: []entity.Hive{
 			ValidHive,
 		},
+		Notes:  []entity.CheptelNote{},
+		Albums: []entity.Album{},
 	}
 
 	ValidHive = entity.Hive{
@@ -32,6 +34,7 @@ var (
 		},
 		Name:      "ValidHive",
 		CheptelID: 2,
+		Notes:     []entity.HiveNote{ValidHiveNote},
 	}
 
 	ValidHiveNote = entity.HiveNote{

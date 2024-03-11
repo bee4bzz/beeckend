@@ -5,6 +5,7 @@ import (
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/hive/schema"
+	log "github.com/gaetanDubuc/beeckend/pkg/log"
 	"gorm.io/gorm"
 )
 
@@ -23,17 +24,23 @@ type Repository interface {
 type Service struct {
 	Repository
 	cheptelManager CheptelManager
+	logger         *log.Logger
 }
 
-func NewService(repository Repository, cheptelManager CheptelManager) *Service {
+func NewService(repository Repository, cheptelManager CheptelManager, logger *log.Logger) *Service {
 	return &Service{
 		Repository:     repository,
 		cheptelManager: cheptelManager,
+		logger:         logger.Named("hive"),
 	}
 }
 
 func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]entity.Hive, error) {
+	logger := s.logger.Named("QueryByUser")
+	logger.Debugf("User %v query its hives", req.UserID)
+
 	if err := req.Validate(); err != nil {
+		logger.Error("the request is invalid")
 		return []entity.Hive{}, err
 	}
 
@@ -41,9 +48,11 @@ func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]e
 
 	err := s.Repository.QueryByUser(ctx, entity.User{Model: gorm.Model{ID: req.UserID}}, &hives)
 	if err != nil {
+		logger.Error("An error occured when getting the hives from the repository")
 		return []entity.Hive{}, err
 	}
 
+	logger.Debugf("hives are retrieved")
 	return hives, nil
 }
 

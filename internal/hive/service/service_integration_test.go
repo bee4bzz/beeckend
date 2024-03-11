@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -13,8 +12,10 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/hive/schema"
 	"github.com/gaetanDubuc/beeckend/internal/hive/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/test"
+	"github.com/gaetanDubuc/beeckend/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/zap/zaptest/observer"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -25,38 +26,43 @@ const (
 	dbName = "hive.db"
 )
 
-type RepositoryTestSuite struct {
+type RepositoryIntegrationSuite struct {
 	suite.Suite
 	ctx            context.Context
 	db             *gorm.DB
 	Service        *Service
 	CheptelManager *chepteltestutils.CheptelManager
+	logger         *log.Logger
+	observer       *observer.ObservedLogs
 }
 
 // this function executes before the test suite begins execution
-func (suite *RepositoryTestSuite) SetupSuite() {
+func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.db = db.NewGormForTest(sqlite.Open(dbName))
 	suite.CheptelManager = &chepteltestutils.CheptelManager{}
-	suite.Service = NewService(repository.NewGormRepository(suite.db), suite.CheptelManager)
+	logger, obs := log.NewForTest()
+	suite.logger = logger
+	suite.observer = obs
+	suite.Service = NewService(repository.NewGormRepository(suite.db), suite.CheptelManager, suite.logger)
 }
 
 // this function executes after all tests executed
-func (suite *RepositoryTestSuite) TearDownSuite() {
+func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 	if err := os.Remove(dbName); err != nil {
-		panic(fmt.Errorf("Error while deleting the database file: %s", err))
+		suite.T().Fatalf("Error while deleting the database file: %s", err)
 	}
 }
 
-func (suite *RepositoryTestSuite) SetupTest() {
+func (suite *RepositoryIntegrationSuite) SetupTest() {
 	db.Seed(suite.T(), suite.db)
 }
 
-func (suite *RepositoryTestSuite) TearDownTest() {
+func (suite *RepositoryIntegrationSuite) TearDownTest() {
 	db.Clean(suite.T(), suite.db)
 }
 
-func (suite *RepositoryTestSuite) TestUpdate() {
+func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID+1, test.ValidUser.ID).Return(nil).Once()
 	now := time.Now()
@@ -77,7 +83,7 @@ func (suite *RepositoryTestSuite) TestUpdate() {
 	}, hive, now)
 }
 
-func (suite *RepositoryTestSuite) TestUpdateFail() {
+func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 	// hive should be not found
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 
@@ -125,7 +131,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 	}
 }
 
-func (suite *RepositoryTestSuite) TestCreate() {
+func (suite *RepositoryIntegrationSuite) TestCreate() {
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
 	now := time.Now()
 
@@ -143,7 +149,7 @@ func (suite *RepositoryTestSuite) TestCreate() {
 	}, hive, now)
 }
 
-func (suite *RepositoryTestSuite) TestCreateFail() {
+func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 
@@ -183,22 +189,24 @@ func (suite *RepositoryTestSuite) TestCreateFail() {
 	}
 }
 
-func (suite *RepositoryTestSuite) TestQueryByUser() {
+func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
 	hives, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
 		UserID: test.ValidUser.ID,
 	})
 
 	assert.NoError(suite.T(), err)
 	testutils.AssertHives(suite.T(), []entity.Hive{test.ValidHive}, hives)
+
+	assert.Equal(suite.T(), 2, suite.observer.Len())
 }
 
-func (suite *RepositoryTestSuite) TestQueryByUserFail() {
+func (suite *RepositoryIntegrationSuite) TestQueryByUserFail() {
 	hives, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{})
 	assert.Error(suite.T(), err)
 	assert.Empty(suite.T(), hives)
 }
 
-func (suite *RepositoryTestSuite) TestDelete() {
+func (suite *RepositoryIntegrationSuite) TestDelete() {
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 	req := schema.Request{
 		UserID:    test.ValidUser.ID,
@@ -211,7 +219,7 @@ func (suite *RepositoryTestSuite) TestDelete() {
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 
-func (suite *RepositoryTestSuite) TestDeleteFail() {
+func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
 
 	validReq := schema.Request{
@@ -241,6 +249,6 @@ func (suite *RepositoryTestSuite) TestDeleteFail() {
 	}
 }
 
-func TestRepositoryTestSuite(t *testing.T) {
-	suite.Run(t, new(RepositoryTestSuite))
+func TestRepositoryIntegrationSuite(t *testing.T) {
+	suite.Run(t, new(RepositoryIntegrationSuite))
 }

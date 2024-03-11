@@ -78,26 +78,26 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 
 func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	now := time.Now()
-	user := entity.Hive{Model: gorm.Model{ID: test.ValidHive.ID}, Name: "new name"}
-	err := suite.Repository.Update(suite.ctx, &user)
+	hive := entity.Hive{Model: gorm.Model{ID: test.ValidHive.ID}, Name: "new name"}
+	err := suite.Repository.Update(suite.ctx, &hive)
 	assert.NoError(suite.T(), err)
 	test.ValidHive.Name = "new name"
-	testutils.AssertHiveUpdated(suite.T(), test.ValidHive, user, now)
+	testutils.AssertHiveUpdated(suite.T(), test.ValidHive, hive, now)
 }
 
 func (suite *RepositoryIntegrationSuite) TestGet() {
-	user := entity.Hive{Model: gorm.Model{ID: test.ValidHive.ID}}
-	err := suite.Repository.Get(suite.ctx, &user)
+	hive := entity.Hive{Model: gorm.Model{ID: test.ValidHive.ID}}
+	err := suite.Repository.Get(suite.ctx, &hive)
 	assert.NoError(suite.T(), err)
-	testutils.AssertHive(suite.T(), test.ValidHive, user)
+	testutils.AssertHive(suite.T(), test.ValidHive, hive)
 }
 
 func (suite *RepositoryIntegrationSuite) TestSoftDelete() {
-	user := entity.Hive{Model: gorm.Model{ID: 100}}
-	suite.Repository.Create(suite.ctx, &user)
-	err := suite.Repository.SoftDelete(suite.ctx, &user)
+	hive := entity.Hive{Model: gorm.Model{ID: 100}}
+	suite.Repository.Create(suite.ctx, &hive)
+	err := suite.Repository.SoftDelete(suite.ctx, &hive)
 	assert.NoError(suite.T(), err)
-	err = suite.Repository.Get(suite.ctx, &user)
+	err = suite.Repository.Get(suite.ctx, &hive)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 
