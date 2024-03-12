@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -44,12 +43,100 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryTestSuite) TestGet() {
-	(*suite.mock).ExpectBegin()
-	(*suite.mock).ExpectQuery(`SELECT \* FROM "users" WHERE "users"\."deleted_at" IS NULL AND "users"\."id" = \$1`).WithArgs(test.ValidUser.ID).WillReturnError(sql.ErrTxDone)
-	(*suite.mock).ExpectCommit()
+	(*suite.mock).ExpectQuery(
+		`SELECT \"cheptels\".\"id\",\"cheptels\".\"created_at\",\"cheptels\".\"updated_at\",\"cheptels\".\"deleted_at\",\"cheptels\".\"name\" FROM \"cheptels\" JOIN \"user_cheptels\" ON \"user_cheptels\".\"cheptel_id\" = \"cheptels\".\"id\" AND \"user_cheptels\".\"user_id\" = \$1 WHERE \"cheptels\".\"deleted_at\" IS NULL AND "cheptels"."id" = \$2`,
+	).WithArgs(test.ValidUser.ID, test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(test.ValidCheptel.ID))
 
-	err := suite.Repository.Get(suite.ctx, &entity.User{}, &entity.Cheptel{})
-	assert.ErrorIs(suite.T(), err, sql.ErrTxDone)
+	(*suite.mock).ExpectQuery(
+		`SELECT \"cheptels\".\"id\",\"cheptels\".\"created_at\",\"cheptels\".\"updated_at\",\"cheptels\".\"deleted_at\",\"cheptels\".\"name\" FROM \"cheptels\" JOIN \"user_cheptels\" ON \"user_cheptels\".\"cheptel_id\" = \"cheptels\".\"id\" AND \"user_cheptels\".\"user_id\" = \$1 WHERE \"cheptels\".\"deleted_at\" IS NULL`,
+	).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(test.ValidCheptel.ID))
+
+	testcases := []struct {
+		name    string
+		cheptel *entity.Cheptel
+	}{
+		{
+			name: "Valid cheptel",
+			cheptel: &entity.Cheptel{
+				Model: gorm.Model{ID: test.ValidCheptel.ID},
+			},
+		},
+		{
+			name:    "Empty cheptel",
+			cheptel: &entity.Cheptel{},
+		},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			err := suite.Repository.Get(suite.ctx, &test.ValidUser, tc.cheptel)
+			assert.NoError(t, err)
+			assert.Equal(t, test.ValidCheptel.ID, tc.cheptel.ID)
+		})
+	}
+}
+
+func (suite *RepositoryTestSuite) TestQuery() {
+	(*suite.mock).ExpectQuery(
+		`SELECT \"cheptels\".\"id\",\"cheptels\".\"created_at\",\"cheptels\".\"updated_at\",\"cheptels\".\"deleted_at\",\"cheptels\".\"name\" FROM \"cheptels\" JOIN \"user_cheptels\" ON \"user_cheptels\".\"cheptel_id\" = \"cheptels\".\"id\" AND \"user_cheptels\".\"user_id\" = \$1 WHERE \"cheptels\".\"deleted_at\" IS NULL`,
+	).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(test.ValidCheptel.ID))
+
+	(*suite.mock).ExpectQuery(
+		`SELECT \"cheptels\".\"id\",\"cheptels\".\"created_at\",\"cheptels\".\"updated_at\",\"cheptels\".\"deleted_at\",\"cheptels\".\"name\" FROM \"cheptels\" JOIN \"user_cheptels\" ON \"user_cheptels\".\"cheptel_id\" = \"cheptels\".\"id\" AND \"user_cheptels\".\"user_id\" = \$1 WHERE \"cheptels\".\"deleted_at\" IS NULL`,
+	).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(test.ValidCheptel.ID))
+
+	testcases := []struct {
+		name     string
+		cheptels *[]entity.Cheptel
+	}{
+		{
+			name: "Valid cheptel",
+			cheptels: &[]entity.Cheptel{
+				{Model: gorm.Model{ID: test.ValidCheptel.ID}},
+			},
+		},
+		{
+			name:     "Empty cheptels",
+			cheptels: &[]entity.Cheptel{},
+		},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			err := suite.Repository.Query(suite.ctx, &test.ValidUser, tc.cheptels)
+			assert.NoError(t, err)
+			assert.Equal(t, test.ValidCheptel.ID, (*tc.cheptels)[0].ID)
+		})
+	}
+}
+
+func (suite *RepositoryTestSuite) TestCreate() {
+	(*suite.mock).ExpectExec(
+		`INSERT INTO "user_cheptels" \("user_id","cheptel_id"\) VALUES \(\$1,\$2\)`,
+	).WithArgs(test.ValidUser.ID, test.ValidCheptel.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+
+	testcases := []struct {
+		name    string
+		cheptel *entity.Cheptel
+	}{
+		{
+			name: "Valid cheptel",
+			cheptel: &entity.Cheptel{
+				Model: gorm.Model{ID: test.ValidCheptel.ID},
+			},
+		},
+		{
+			name:    "Empty cheptel",
+			cheptel: &entity.Cheptel{},
+		},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			err := suite.Repository.Create(suite.ctx, &test.ValidUser, tc.cheptel)
+			assert.NoError(t, err)
+		})
+	}
 }
 
 func TestRepositoryTestSuite(t *testing.T) {
