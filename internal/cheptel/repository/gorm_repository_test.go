@@ -44,15 +44,32 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryTestSuite) TestQueryByUser() {
-	(*suite.mock).ExpectQuery(`SELECT \* FROM "users" WHERE "users"\."deleted_at" IS NULL AND "users"\."id" = \$1`).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name"}).AddRow(test.ValidUser.ID, test.ValidUser.Email, test.ValidUser.Name))
-	(*suite.mock).ExpectQuery(`SELECT \* FROM "user_cheptels" WHERE "user_cheptels"\."user_id" = \$1`).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"user_id", "cheptel_id"}).AddRow(test.ValidUser.ID, test.ValidCheptel.ID))
-	(*suite.mock).ExpectQuery(`SELECT \* FROM "cheptels" WHERE "cheptels"\."id" = \$1`).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(test.ValidCheptel.ID, test.ValidCheptel.Name))
-	(*suite.mock).ExpectQuery(`SELECT \* FROM "albums" WHERE "owner_type" = \$1 AND "albums"\."owner_id" = \$2 AND "albums"\."deleted_at" IS NULL`).WithArgs("cheptels", test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "name", "cheptel_id"}))
-	(*suite.mock).ExpectQuery(`SELECT \* FROM "hives" WHERE "hives"\."cheptel_id" = \$1 AND "hives"\."deleted_at" IS NULL`).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "name", "cheptel_id"}))
-	(*suite.mock).ExpectQuery(`SELECT \* FROM "cheptel_notes" WHERE "cheptel_notes"\."cheptel_id" = \$1 AND "cheptel_notes"\."deleted_at" IS NULL`).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "cheptel_id", "note", "created_at", "updated_at"}))
+	(*suite.mock).ExpectQuery(
+		`SELECT .* 
+		FROM "cheptels" 
+		JOIN "user_cheptels" ON "user_cheptels"\."cheptel_id" = "cheptels"\."id" AND "user_cheptels"\."user_id" = \$1 
+		WHERE "cheptels"\."deleted_at" IS NULL`,
+	).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(test.ValidCheptel.ID))
+	(*suite.mock).ExpectQuery(
+		`SELECT .* 
+		FROM "albums" 
+		WHERE "owner_type" = \$1 AND "albums"\."owner_id" = \$2 AND "albums"\."deleted_at" IS NULL`,
+	).WithArgs("cheptels", test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}))
+	(*suite.mock).ExpectQuery(
+		`SELECT .* FROM "hives" WHERE "hives"\."cheptel_id" = \$1 AND "hives"\."deleted_at" IS NULL`,
+	).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}))
+	(*suite.mock).ExpectQuery(
+		`SELECT .* 
+		FROM "cheptel_notes" 
+		WHERE "cheptel_notes"\."cheptel_id" = \$1 AND "cheptel_notes"\."deleted_at" IS NULL`,
+	).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
-	(*suite.mock).ExpectQuery(`SELECT \* FROM "users" WHERE "users"\."deleted_at" IS NULL AND "users"\."id" = \$1`).WithArgs(100).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name"}))
-	(*suite.mock).ExpectQuery(`SELECT \* FROM "user_cheptels" WHERE "user_cheptels"\."user_id" = \$1`).WithArgs(100).WillReturnRows(sqlmock.NewRows([]string{"user_id", "cheptel_id"}))
+	(*suite.mock).ExpectQuery(
+		`SELECT .* 
+		FROM "cheptels" 
+		JOIN "user_cheptels" ON "user_cheptels"\."cheptel_id" = "cheptels"\."id" AND "user_cheptels"\."user_id" = \$1 
+		WHERE "cheptels"\."deleted_at" IS NULL`,
+	).WithArgs(100).WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 	testcases := []struct {
 		name string
@@ -66,7 +83,7 @@ func (suite *RepositoryTestSuite) TestQueryByUser() {
 	for _, tc := range testcases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			cheptels := []entity.Cheptel{}
-			err := suite.Repository.QueryByUser(suite.ctx, tc.User, &cheptels)
+			err := suite.Repository.QueryByUser(suite.ctx, &tc.User, &cheptels)
 			assert.NoError(t, err)
 			assert.Len(t, cheptels, tc.len)
 		})
@@ -74,10 +91,14 @@ func (suite *RepositoryTestSuite) TestQueryByUser() {
 }
 
 func (suite *RepositoryTestSuite) TestQueryByUserFail() {
-	(*suite.mock).ExpectQuery(`SELECT \* FROM "users" WHERE "users"\."deleted_at" IS NULL AND "users"\."id" = \$1`).WithArgs(test.ValidUser.ID).WillReturnError(sql.ErrTxDone)
+	(*suite.mock).ExpectQuery(
+		`SELECT .* FROM "cheptels" 
+		JOIN "user_cheptels" ON "user_cheptels"\."cheptel_id" = "cheptels"\."id" AND "user_cheptels"\."user_id" = \$1
+		WHERE "cheptels"\."deleted_at" IS NULL`,
+	).WithArgs(test.ValidUser.ID).WillReturnError(sql.ErrTxDone)
 
 	cheptels := []entity.Cheptel{}
-	err := suite.Repository.QueryByUser(suite.ctx, test.ValidUser, &cheptels)
+	err := suite.Repository.QueryByUser(suite.ctx, &test.ValidUser, &cheptels)
 	assert.ErrorIs(suite.T(), err, sql.ErrTxDone)
 }
 

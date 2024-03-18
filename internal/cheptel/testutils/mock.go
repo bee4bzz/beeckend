@@ -25,8 +25,8 @@ func (r *Repository) Get(ctx context.Context, cheptel *entity.Cheptel) error {
 	return args.Error(0)
 }
 
-func (r *Repository) QueryByUser(ctx context.Context, user entity.User, cheptels *[]entity.Cheptel) error {
-	args := r.Called(user, *cheptels)
+func (r *Repository) QueryByUser(ctx context.Context, user *entity.User, cheptels *[]entity.Cheptel) error {
+	args := r.Called(*user, *cheptels)
 	return args.Error(0)
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/gaetanDubuc/beeckend/internal/cheptel/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/gaetanDubuc/beeckend/pkg/log"
@@ -13,43 +12,32 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"gorm.io/gorm"
 
-	chepteltestutils "github.com/gaetanDubuc/beeckend/internal/cheptel/testutils"
+	cheptelmngtestutils "github.com/gaetanDubuc/beeckend/internal/cheptelmanager/testutils"
 )
 
 type RepositoryTestSuite struct {
 	suite.Suite
-	ctx            context.Context
-	Service        *Service
-	CheptelManager *chepteltestutils.CheptelManager
-	Repository     *chepteltestutils.Repository
-	logger         *log.Logger
-	observer       *observer.ObservedLogs
+	ctx        context.Context
+	Service    *Service
+	Repository *cheptelmngtestutils.Repository
+	logger     *log.Logger
+	observer   *observer.ObservedLogs
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
-	suite.CheptelManager = &chepteltestutils.CheptelManager{}
-	suite.Repository = &chepteltestutils.Repository{}
+	suite.Repository = &cheptelmngtestutils.Repository{}
 	logger, obs := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
-	suite.Service = NewService(suite.Repository, suite.CheptelManager, logger)
+	suite.Service = NewService(suite.Repository, logger)
 }
 
-func (suite *RepositoryTestSuite) TestQueryByUserFail() {
-	suite.Repository.On("QueryByUser", entity.User{
-		Model: gorm.Model{
-			ID: test.ValidUser.ID,
-		},
-	}, []entity.Cheptel{}).Return(test.ErrMock).Once()
-
-	cheptels, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
-		UserID: test.ValidUser.ID,
-	})
-	assert.Error(suite.T(), err)
-	assert.Empty(suite.T(), cheptels)
-	assert.Equal(suite.T(), 2, suite.observer.Len())
+func (suite *RepositoryTestSuite) TestOnlyMember() {
+	suite.Repository.On("Get", entity.User{Model: gorm.Model{ID: test.ValidUser.ID}}, entity.Cheptel{Model: gorm.Model{ID: test.ValidCheptel.ID}}).Return(nil)
+	err := suite.Service.OnlyMember(suite.ctx, test.ValidCheptel.ID, test.ValidUser.ID)
+	assert.NoError(suite.T(), err)
 }
 
 func TestRepositoryTestSuite(t *testing.T) {

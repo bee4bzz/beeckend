@@ -112,7 +112,7 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
 
 	for _, tc := range testcases {
 		hives := []entity.Hive{}
-		err := suite.Repository.QueryByUser(suite.ctx, tc.User, &hives)
+		err := suite.Repository.QueryByUser(suite.ctx, &tc.User, &hives)
 		assert.NoError(suite.T(), err)
 		assert.Len(suite.T(), hives, tc.len)
 	}

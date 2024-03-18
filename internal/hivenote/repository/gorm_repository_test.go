@@ -48,6 +48,7 @@ func (suite *RepositoryTestSuite) TestQueryByUser() {
 	(*suite.mock).ExpectQuery(`SELECT \* FROM "user_cheptels" WHERE "user_cheptels"\."user_id" = \$1`).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"user_id", "cheptel_id"}).AddRow(test.ValidUser.ID, test.ValidCheptel.ID))
 	(*suite.mock).ExpectQuery(`SELECT \* FROM "cheptels" WHERE "cheptels"\."id" = \$1`).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(test.ValidCheptel.ID, test.ValidCheptel.Name))
 	(*suite.mock).ExpectQuery(`SELECT \* FROM "hives" WHERE "hives"\."cheptel_id" = \$1`).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "name", "cheptel_id"}).AddRow(test.ValidHive.ID, test.ValidHive.Name, test.ValidCheptel.ID))
+	(*suite.mock).ExpectQuery(`SELECT \* FROM "hive_notes" WHERE "hive_notes"\."hive_id" = \$1 AND "hive_notes"\."deleted_at" IS NULL`).WithArgs(test.ValidHive.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "name", "hive_id", "operation"}).AddRow(test.ValidHiveNote.ID, test.ValidHiveNote.Name, test.ValidHiveNote.HiveID, test.ValidHiveNote.Operation))
 
 	(*suite.mock).ExpectQuery(`SELECT \* FROM "users" WHERE "users"\."deleted_at" IS NULL AND "users"\."id" = \$1`).WithArgs(100).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name"}))
 	(*suite.mock).ExpectQuery(`SELECT \* FROM "user_cheptels" WHERE "user_cheptels"\."user_id" = \$1`).WithArgs(100).WillReturnRows(sqlmock.NewRows([]string{"user_id", "cheptel_id"}))
@@ -61,18 +62,18 @@ func (suite *RepositoryTestSuite) TestQueryByUser() {
 	}
 
 	for _, tc := range testcases {
-		hives := []entity.Hive{}
-		err := suite.Repository.QueryByUser(suite.ctx, &tc.User, &hives)
+		hiveNotes := []entity.HiveNote{}
+		err := suite.Repository.QueryByUser(suite.ctx, &tc.User, &hiveNotes)
 		assert.NoError(suite.T(), err)
-		assert.Len(suite.T(), hives, tc.len)
+		assert.Len(suite.T(), hiveNotes, tc.len)
 	}
 }
 
 func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 	(*suite.mock).ExpectQuery(`SELECT \* FROM "users" WHERE "users"\."deleted_at" IS NULL AND "users"\."id" = \$1`).WithArgs(test.ValidUser.ID).WillReturnError(sql.ErrTxDone)
 
-	hives := []entity.Hive{}
-	err := suite.Repository.QueryByUser(suite.ctx, &test.ValidUser, &hives)
+	hiveNotes := []entity.HiveNote{}
+	err := suite.Repository.QueryByUser(suite.ctx, &test.ValidUser, &hiveNotes)
 	assert.ErrorIs(suite.T(), err, sql.ErrTxDone)
 }
 

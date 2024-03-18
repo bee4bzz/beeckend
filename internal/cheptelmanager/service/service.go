@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	e "errors"
 
-	"github.com/gaetanDubuc/beeckend/internal/cheptel/schema"
+	"github.com/gaetanDubuc/beeckend/internal/cheptelmanager/errors"
+	"github.com/gaetanDubuc/beeckend/internal/cheptelmanager/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	log "github.com/gaetanDubuc/beeckend/pkg/log"
 	"gorm.io/gorm"
@@ -14,105 +16,55 @@ type CheptelManager interface {
 }
 
 type Repository interface {
-	Get(ctx context.Context, cheptel *entity.Cheptel) error
-	QueryByUser(ctx context.Context, user entity.User, cheptels *[]entity.Cheptel) error
-	Create(ctx context.Context, cheptel *entity.Cheptel) error
-	Update(ctx context.Context, cheptel *entity.Cheptel) error
-	SoftDelete(ctx context.Context, cheptel *entity.Cheptel) error
+	Get(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
+	Create(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
+	Update(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
+	SoftDelete(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
 }
 
 type Service struct {
 	Repository
-	cheptelManager CheptelManager
-	logger         *log.Logger
+	logger *log.Logger
 }
 
-func NewService(repository Repository, cheptelManager CheptelManager, logger *log.Logger) *Service {
+func NewService(repository Repository, logger *log.Logger) *Service {
 	return &Service{
-		Repository:     repository,
-		cheptelManager: cheptelManager,
-		logger:         logger.Named("cheptel"),
+		Repository: repository,
+		logger:     logger.Named("cheptel manager"),
 	}
 }
 
-func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]entity.Cheptel, error) {
-	logger := s.logger.Named("QueryByUser")
-	logger.Debugf("User %v query its cheptels", req.UserID)
-
+// Create creates a cheptel association with a user
+func (s *Service) Create(ctx context.Context, req schema.Request) error {
 	if err := req.Validate(); err != nil {
-		logger.Error("the request is invalid")
-		return []entity.Cheptel{}, err
+		return err
 	}
 
-	cheptels := []entity.Cheptel{}
-
-	err := s.Repository.QueryByUser(ctx, entity.User{Model: gorm.Model{ID: req.UserID}}, &cheptels)
+	err := s.OnlyMember(ctx, req.CheptelID, req.UserID)
 	if err != nil {
-		logger.Error("An error occured when getting the cheptels from the repository")
-		return []entity.Cheptel{}, err
-	}
-
-	logger.Debugf("cheptels are retrieved")
-	return cheptels, nil
-}
-
-// Create creates a cheptel
-func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.Cheptel, error) {
-	if err := req.Validate(); err != nil {
-		return entity.Cheptel{}, err
-	}
-
-	err := s.cheptelManager.OnlyMember(ctx, req.CheptelID, req.UserID)
-	if err != nil {
-		return entity.Cheptel{}, err
+		return err
 	}
 
 	cheptel := entity.Cheptel{
 		Model: gorm.Model{
 			ID: req.CheptelID,
 		},
-		Name: req.Name,
 	}
 
-	err = s.Repository.Create(ctx, &cheptel)
+	err = s.Repository.Create(ctx, &entity.User{Model: gorm.Model{ID: req.MemberID}}, &cheptel)
 	if err != nil {
-		return entity.Cheptel{}, err
+		return err
 	}
-	return cheptel, err
+	return err
 }
 
-// Update updates a cheptel
-func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.Cheptel, error) {
-	if err := req.Validate(); err != nil {
-		return entity.Cheptel{}, err
-	}
-
-	err := s.cheptelManager.OnlyMember(ctx, req.CheptelID, req.UserID)
-	if err != nil {
-		return entity.Cheptel{}, err
-	}
-
-	cheptel := entity.Cheptel{
-		Model: gorm.Model{
-			ID: req.CheptelID,
-		},
-		Name: req.NewName,
-	}
-
-	err = s.Repository.Update(ctx, &cheptel)
-	if err != nil {
-		return entity.Cheptel{}, err
-	}
-	return cheptel, err
-}
-
-// Delete deletes an cheptel
+// Delete deletes a cheptel association with a user
 func (s *Service) SoftDelete(ctx context.Context, req schema.Request) error {
 	if err := req.Validate(); err != nil {
 		return err
 	}
 
-	err := s.cheptelManager.OnlyMember(ctx, req.CheptelID, req.UserID)
+	err := s.OnlyMember(ctx, req.CheptelID, req.UserID)
 	if err != nil {
 		return err
 	}
@@ -123,5 +75,22 @@ func (s *Service) SoftDelete(ctx context.Context, req schema.Request) error {
 		},
 	}
 
-	return s.Repository.SoftDelete(ctx, &cheptel)
+	return s.Repository.SoftDelete(ctx, &entity.User{Model: gorm.Model{ID: req.MemberID}}, &cheptel)
+}
+
+func (s *Service) OnlyMember(ctx context.Context, cheptelID, userID uint) error {
+	err := s.Repository.Get(
+		ctx,
+		&entity.User{Model: gorm.Model{ID: userID}},
+		&entity.Cheptel{
+			Model: gorm.Model{
+				ID: cheptelID,
+			},
+		})
+	if e.Is(err, gorm.ErrRecordNotFound) {
+		return errors.ErrNotMember
+	} else if err != nil {
+		return err
+	}
+	return nil
 }

@@ -2,13 +2,14 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/gaetanDubuc/beeckend/internal/cheptel/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
+	"github.com/gaetanDubuc/beeckend/internal/hivenote/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -17,7 +18,7 @@ import (
 )
 
 const (
-	dbName = "cheptel.db"
+	dbName = "hive.db"
 )
 
 type RepositoryIntegrationSuite struct {
@@ -37,7 +38,7 @@ func (suite *RepositoryIntegrationSuite) SetupSuite() {
 // this function executes after all tests executed
 func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 	if err := os.Remove(dbName); err != nil {
-		suite.T().Errorf("Error while deleting the database file: %s", err)
+		panic(fmt.Errorf("Error while deleting the database file: %s", err))
 	}
 }
 
@@ -50,22 +51,25 @@ func (suite *RepositoryIntegrationSuite) TearDownTest() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreate() {
-	cheptel := entity.Cheptel{
+	hive := entity.HiveNote{
 		Model: gorm.Model{
 			ID: 100,
 		},
-		Name: "new cheptel",
+		Name:      "new hive",
+		HiveID:    test.ValidHive.ID,
+		Operation: "new operation",
 	}
-	cheptelCopy := cheptel
+	hiveCopy := hive
 	now := time.Now()
-	err := suite.Repository.Create(suite.ctx, &cheptel)
+	err := suite.Repository.Create(suite.ctx, &hive)
 	assert.NoError(suite.T(), err)
-	testutils.AssertCheptelCreated(suite.T(), cheptelCopy, cheptel, now)
+	testutils.AssertHiveNoteCreated(suite.T(), hiveCopy, hive, now)
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreateFail() {
-	tc := []entity.Cheptel{
-		test.ValidCheptel,
+	tc := []entity.HiveNote{
+		test.ValidHiveNote,
+		{HiveID: test.ValidHiveNote.HiveID, Name: test.ValidHiveNote.Name, Operation: test.ValidHiveNote.Operation},
 	}
 	for _, c := range tc {
 		err := suite.Repository.Create(suite.ctx, &c)
@@ -75,26 +79,26 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 
 func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	now := time.Now()
-	cheptel := entity.Cheptel{Model: gorm.Model{ID: test.ValidCheptel.ID}, Name: "new name"}
-	err := suite.Repository.Update(suite.ctx, &cheptel)
+	hive := entity.HiveNote{Model: gorm.Model{ID: test.ValidHiveNote.ID}, Name: "new name"}
+	err := suite.Repository.Update(suite.ctx, &hive)
 	assert.NoError(suite.T(), err)
-	test.ValidCheptel.Name = "new name"
-	testutils.AssertCheptelUpdated(suite.T(), test.ValidCheptel, cheptel, now)
+	test.ValidHiveNote.Name = "new name"
+	testutils.AssertHiveNoteUpdated(suite.T(), test.ValidHiveNote, hive, now)
 }
 
 func (suite *RepositoryIntegrationSuite) TestGet() {
-	cheptel := entity.Cheptel{Model: gorm.Model{ID: test.ValidCheptel.ID}}
-	err := suite.Repository.Get(suite.ctx, &cheptel)
+	hive := entity.HiveNote{Model: gorm.Model{ID: test.ValidHiveNote.ID}}
+	err := suite.Repository.Get(suite.ctx, &hive)
 	assert.NoError(suite.T(), err)
-	testutils.AssertCheptel(suite.T(), test.ValidCheptel, cheptel)
+	testutils.AssertHiveNote(suite.T(), test.ValidHiveNote, hive)
 }
 
 func (suite *RepositoryIntegrationSuite) TestSoftDelete() {
-	cheptel := entity.Cheptel{Model: gorm.Model{ID: 100}}
-	suite.Repository.Create(suite.ctx, &cheptel)
-	err := suite.Repository.SoftDelete(suite.ctx, &cheptel)
+	hive := entity.HiveNote{Model: gorm.Model{ID: 100}}
+	suite.Repository.Create(suite.ctx, &hive)
+	err := suite.Repository.SoftDelete(suite.ctx, &hive)
 	assert.NoError(suite.T(), err)
-	err = suite.Repository.Get(suite.ctx, &cheptel)
+	err = suite.Repository.Get(suite.ctx, &hive)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 
@@ -108,10 +112,10 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
 	}
 
 	for _, tc := range testcases {
-		cheptels := []entity.Cheptel{}
-		err := suite.Repository.QueryByUser(suite.ctx, &tc.User, &cheptels)
+		hiveNotes := []entity.HiveNote{}
+		err := suite.Repository.QueryByUser(suite.ctx, &tc.User, &hiveNotes)
 		assert.NoError(suite.T(), err)
-		assert.Len(suite.T(), cheptels, tc.len)
+		assert.Len(suite.T(), hiveNotes, tc.len)
 	}
 }
 

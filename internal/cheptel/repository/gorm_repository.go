@@ -19,11 +19,6 @@ func NewGormRepository(db *gorm.DB) *GormRepository {
 	}
 }
 
-func (r *GormRepository) QueryByUser(ctx context.Context, user entity.User, cheptels *[]entity.Cheptel) error {
-	err := r.DB().WithContext(ctx).Preload(entity.CheptelsKey + "." + clause.Associations).Find(&user).Error
-	if err != nil {
-		return err
-	}
-	*cheptels = user.Cheptels
-	return err
+func (r *GormRepository) QueryByUser(ctx context.Context, user *entity.User, cheptels *[]entity.Cheptel) error {
+	return r.DB().Model(user).Preload(clause.Associations).Association(entity.CheptelsKey).Find(cheptels)
 }

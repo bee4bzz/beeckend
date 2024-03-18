@@ -18,7 +18,7 @@ func Seed(t *testing.T, db *gorm.DB) {
 
 func Clean(t *testing.T, db *gorm.DB) {
 	t.Helper()
-	for _, ptr := range []any{&entity.User{}, &entity.Cheptel{}, &entity.Hive{}} {
+	for _, ptr := range []any{&entity.User{}, &entity.Cheptel{}, &entity.Hive{}, &entity.HiveNote{}} {
 		err := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(ptr).Error
 		if err != nil {
 			t.Fatal(err)
