@@ -80,6 +80,7 @@ func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	},
 		CheptelID: 10,
 		Name:      "new name",
+		Notes:     test.ValidHive.Notes,
 	}, hive, now)
 }
 
@@ -100,7 +101,7 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 		HiveID:    test.ValidHive.ID,
 	}
 	hiveNotFoundReq := validUpdateReq.CopyWith(schema.UpdateRequest{
-		HiveID: test.ValidHive.ID + 1,
+		HiveID: 100,
 	})
 
 	newCheptelReq := validUpdateReq.CopyWith(schema.UpdateRequest{
@@ -138,11 +139,12 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 	hive, err := suite.Service.Create(suite.ctx, schema.CreateRequest{
 		UserID:    test.ValidUser.ID,
 		CheptelID: test.ValidCheptel.ID,
+		HiveID:    100,
 		Name:      "new name"})
 
 	assert.NoError(suite.T(), err)
 	testutils.AssertHiveCreated(suite.T(), entity.Hive{Model: gorm.Model{
-		ID: test.ValidHive.ID + 1,
+		ID: 100,
 	},
 		CheptelID: test.ValidCheptel.ID,
 		Name:      "new name",
@@ -195,8 +197,7 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
 	})
 
 	assert.NoError(suite.T(), err)
-	testutils.AssertHives(suite.T(), []entity.Hive{test.ValidHive}, hives)
-
+	testutils.AssertHives(suite.T(), []entity.Hive{test.ValidHive, test.ValidHive2}, hives)
 	assert.Equal(suite.T(), 2, suite.observer.Len())
 }
 
@@ -215,7 +216,7 @@ func (suite *RepositoryIntegrationSuite) TestDelete() {
 	}
 	err := suite.Service.SoftDelete(suite.ctx, req)
 	assert.NoError(suite.T(), err)
-	err = suite.db.Model(&test.ValidHive).First(&entity.Hive{}).Error
+	err = suite.db.Model(&entity.Hive{}).First(test.ValidHive).Error
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 

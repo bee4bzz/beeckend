@@ -15,7 +15,7 @@ type CheptelManager interface {
 
 type Repository interface {
 	Get(ctx context.Context, hive *entity.Hive) error
-	QueryByUser(ctx context.Context, user entity.User, hives *[]entity.Hive) error
+	QueryByUser(ctx context.Context, user *entity.User, hives *[]entity.Hive) error
 	Create(ctx context.Context, hive *entity.Hive) error
 	Update(ctx context.Context, hive *entity.Hive) error
 	SoftDelete(ctx context.Context, hive *entity.Hive) error
@@ -46,7 +46,7 @@ func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]e
 
 	hives := []entity.Hive{}
 
-	err := s.Repository.QueryByUser(ctx, entity.User{Model: gorm.Model{ID: req.UserID}}, &hives)
+	err := s.Repository.QueryByUser(ctx, &entity.User{Model: gorm.Model{ID: req.UserID}}, &hives)
 	if err != nil {
 		logger.Error("An error occured when getting the hives from the repository")
 		return []entity.Hive{}, err

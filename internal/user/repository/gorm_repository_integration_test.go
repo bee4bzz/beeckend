@@ -22,34 +22,46 @@ const (
 	dbName = "user.db"
 )
 
-type RepositoryTestSuite struct {
+type RepositoryIntegrationTestSuite struct {
 	suite.Suite
 	ctx        context.Context
 	Repository *GormRepository
+	db         *gorm.DB
 }
 
 // this function executes before the test suite begins execution
-func (suite *RepositoryTestSuite) SetupSuite() {
+func (suite *RepositoryIntegrationTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
-	db := db.NewGormForTest(sqlite.Open(dbName))
-	suite.Repository = NewGormRepository(db)
+	suite.db = db.NewGormForTest(sqlite.Open(dbName))
+	suite.Repository = NewGormRepository(suite.db)
 }
 
 // this function executes after all tests executed
-func (suite *RepositoryTestSuite) TearDownSuite() {
+func (suite *RepositoryIntegrationTestSuite) TearDownSuite() {
 	if err := os.Remove(dbName); err != nil {
 		panic(fmt.Errorf("Error while deleting the database file: %s", err))
 	}
 }
 
-func (suite *RepositoryTestSuite) TestCreate() {
+func (suite *RepositoryIntegrationTestSuite) SetupTest() {
+	db.Seed(suite.T(), suite.db)
+}
+
+func (suite *RepositoryIntegrationTestSuite) TearDownTest() {
+	db.Clean(suite.T(), suite.db)
+}
+
+func (suite *RepositoryIntegrationTestSuite) TestCreate() {
 	now := time.Now()
-	err := suite.Repository.Create(suite.ctx, &test.ValidUser)
+	err := suite.Repository.Create(suite.ctx, &entity.User{
+		Name:  "new user",
+		Email: utils.ValidEmail(),
+	})
 	assert.NoError(suite.T(), err)
 	utils.AssertCreated(suite.T(), test.ValidUser.Model, now)
 }
 
-func (suite *RepositoryTestSuite) TestUpdate() {
+func (suite *RepositoryIntegrationTestSuite) TestUpdate() {
 	now := time.Now()
 	user := entity.User{Model: gorm.Model{ID: test.ValidUser.ID}, Name: "new name"}
 	err := suite.Repository.Update(suite.ctx, &user)
@@ -58,22 +70,20 @@ func (suite *RepositoryTestSuite) TestUpdate() {
 	testutils.AssertUserUpdated(suite.T(), test.ValidUser, user, now)
 }
 
-func (suite *RepositoryTestSuite) TestGet() {
+func (suite *RepositoryIntegrationTestSuite) TestGet() {
 	user := entity.User{Model: gorm.Model{ID: test.ValidUser.ID}}
 	err := suite.Repository.Get(suite.ctx, &user)
 	assert.NoError(suite.T(), err)
 	testutils.AssertUser(suite.T(), test.ValidUser, user)
 }
 
-func (suite *RepositoryTestSuite) TestSoftDelete() {
-	user := entity.User{Model: gorm.Model{ID: 100}}
-	suite.Repository.Create(suite.ctx, &user)
-	err := suite.Repository.SoftDelete(suite.ctx, &user)
+func (suite *RepositoryIntegrationTestSuite) TestSoftDelete() {
+	err := suite.Repository.SoftDelete(suite.ctx, &test.ValidUser)
 	assert.NoError(suite.T(), err)
-	err = suite.Repository.Get(suite.ctx, &user)
+	err = suite.Repository.Get(suite.ctx, &test.ValidUser)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 
-func TestRepositoryTestSuite(t *testing.T) {
-	suite.Run(t, new(RepositoryTestSuite))
+func TestRepositoryIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(RepositoryIntegrationTestSuite))
 }

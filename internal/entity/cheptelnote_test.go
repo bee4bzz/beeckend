@@ -10,7 +10,7 @@ import (
 
 var (
 	EmptyNote = CheptelNote{
-		Weather:     weather(""),
+		Weather:     Weather(""),
 		State:       utils.String(""),
 		Observation: utils.String(""),
 	}
@@ -18,7 +18,7 @@ var (
 		CheptelID: 1,
 		Name:      utils.ValidName(),
 		Flora:     utils.ValidName(),
-		Weather:   weather(random.String(10)),
+		Weather:   Weather(random.String(10)),
 	}
 	ValidFilledNote = CheptelNote{
 		CheptelID:        1,
@@ -50,7 +50,7 @@ func TestWeather(t *testing.T) {
 	assert.NoError(t, err, "Weather should be valid")
 	assert.Equal(t, "CLOUDY", v, "Weather should be valid")
 
-	var w weather
+	var w Weather
 	err = w.Scan("CLOUDY")
 	assert.NoError(t, err, "Weather should be valid")
 	assert.Equal(t, CLOUDY, w, "Weather should be valid")

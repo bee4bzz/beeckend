@@ -8,9 +8,9 @@ import (
 
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	"github.com/gaetanDubuc/beeckend/internal/hive/repository"
-	"github.com/gaetanDubuc/beeckend/internal/hive/schema"
-	"github.com/gaetanDubuc/beeckend/internal/hive/testutils"
+	"github.com/gaetanDubuc/beeckend/internal/hivenote/repository"
+	"github.com/gaetanDubuc/beeckend/internal/hivenote/schema"
+	"github.com/gaetanDubuc/beeckend/internal/hivenote/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/gaetanDubuc/beeckend/pkg/log"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +20,7 @@ import (
 	"gorm.io/gorm"
 
 	chepteltestutils "github.com/gaetanDubuc/beeckend/internal/cheptel/testutils"
+	hiverepository "github.com/gaetanDubuc/beeckend/internal/hive/repository"
 )
 
 const (
@@ -44,11 +45,12 @@ func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	logger, obs := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
-	suite.Service = NewService(repository.NewGormRepository(suite.db), suite.CheptelManager, suite.logger)
+	suite.Service = NewService(repository.NewGormRepository(suite.db), hiverepository.NewGormRepository(suite.db), suite.CheptelManager, suite.logger)
 }
 
 // this function executes after all tests executed
 func (suite *RepositoryIntegrationSuite) TearDownSuite() {
+	suite.CheptelManager.AssertExpectations(suite.T())
 	if err := os.Remove(dbName); err != nil {
 		suite.T().Fatalf("Error while deleting the database file: %s", err)
 	}
@@ -64,62 +66,94 @@ func (suite *RepositoryIntegrationSuite) TearDownTest() {
 
 func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
-	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID+1, test.ValidUser.ID).Return(nil).Once()
+	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 	now := time.Now()
 
 	hive, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{
-		UserID:       test.ValidUser.ID,
-		CheptelID:    test.ValidHive.CheptelID,
-		HiveID:       test.ValidHive.ID,
-		NewCheptelID: test.ValidHive.CheptelID + 1,
-		NewName:      "new name"})
+		UserID:     test.ValidUser.ID,
+		CheptelID:  test.ValidHive.CheptelID,
+		HiveID:     test.ValidHive.ID,
+		HiveNoteID: test.ValidHiveNote.ID,
+		NewHiveID:  test.ValidHive2.ID,
+		NewName:    "new name"})
 
 	assert.NoError(suite.T(), err)
-	testutils.AssertHiveUpdated(suite.T(), entity.Hive{Model: gorm.Model{
-		ID: test.ValidHive.ID,
+	testutils.AssertHiveNoteUpdated(suite.T(), entity.HiveNote{Model: gorm.Model{
+		ID: test.ValidHiveNote.ID,
 	},
-		CheptelID: 10,
+		HiveID:    test.ValidHive2.ID,
 		Name:      "new name",
+		Operation: test.ValidHiveNote.Operation,
 	}, hive, now)
 }
 
 func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
-	// hive should be not found
-	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
-
-	// An unknown user of the new cheptel should not be able to update the hive
-	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
-	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID+1, test.ValidUser.ID).Return(test.ErrMock).Once()
-
-	// An unknown user of the current cheptel should not be able to update the hive
-	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
-
 	validUpdateReq := schema.UpdateRequest{
-		UserID:    test.ValidUser.ID,
-		CheptelID: test.ValidHive.CheptelID,
-		HiveID:    test.ValidHive.ID,
+		UserID:     test.ValidUser.ID,
+		CheptelID:  test.ValidHive.CheptelID,
+		HiveID:     test.ValidHive.ID,
+		HiveNoteID: test.ValidHiveNote.ID,
 	}
-	hiveNotFoundReq := validUpdateReq.CopyWith(schema.UpdateRequest{
-		HiveID: test.ValidHive.ID + 1,
+	hiveNotFoundReq := validUpdateReq.CopyWith(
+		schema.UpdateRequest{
+			NewHiveID: 100,
+		},
+	)
+	hiveNoteNotFoundReq := validUpdateReq.CopyWith(schema.UpdateRequest{
+		HiveNoteID: 100,
 	})
 
 	newCheptelReq := validUpdateReq.CopyWith(schema.UpdateRequest{
-		NewCheptelID: test.ValidHive.CheptelID + 1,
+		NewHiveID: test.ValidHive2.ID,
 	})
 
 	testcases := []struct {
 		name string
 		req  schema.UpdateRequest
 		err  error
+		fn   func()
 	}{
-		{name: "hive should be not found", req: hiveNotFoundReq, err: gorm.ErrRecordNotFound},
-		{name: "An unknown user of the new cheptel should not be able to update the hive", req: newCheptelReq, err: test.ErrMock},
-		{name: "An unknown user of the current cheptel should not be able to update the hive", req: validUpdateReq, err: test.ErrMock},
+		{
+			name: "hive note should be not found",
+			req:  hiveNoteNotFoundReq,
+			err:  gorm.ErrRecordNotFound,
+			fn: func() {
+				suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
+			},
+		},
+		{
+			name: "new hive should be not found",
+			req:  hiveNotFoundReq,
+			err:  gorm.ErrRecordNotFound,
+			fn: func() {
+				suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
+			},
+		},
+		{
+			name: "An unknown user of the new cheptel should not be able to update the hive note",
+			req:  newCheptelReq,
+			err:  test.ErrMock,
+			fn: func() {
+				suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
+				suite.CheptelManager.On("OnlyMember", test.ValidHive2.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
+			},
+		},
+		{
+			name: "An unknown user of the current cheptel should not be able to update the hive note",
+			req:  validUpdateReq,
+			err:  test.ErrMock,
+			fn: func() {
+				suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
+			},
+		},
 		{name: "the request should be invalid", req: schema.UpdateRequest{}},
 	}
 
 	for _, tc := range testcases {
 		suite.T().Run(tc.name, func(t *testing.T) {
+			if tc.fn != nil {
+				tc.fn()
+			}
 			hive, err := suite.Service.Update(suite.ctx, tc.req)
 			if tc.err == nil {
 				assert.Error(t, err)
@@ -136,16 +170,21 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 	now := time.Now()
 
 	hive, err := suite.Service.Create(suite.ctx, schema.CreateRequest{
-		UserID:    test.ValidUser.ID,
-		CheptelID: test.ValidCheptel.ID,
-		Name:      "new name"})
+		UserID:     test.ValidUser.ID,
+		CheptelID:  test.ValidCheptel.ID,
+		HiveID:     test.ValidHive.ID,
+		HiveNoteID: 100,
+		Name:       "new name",
+		Operation:  "new operation",
+	})
 
 	assert.NoError(suite.T(), err)
-	testutils.AssertHiveCreated(suite.T(), entity.Hive{Model: gorm.Model{
-		ID: test.ValidHive.ID + 1,
+	testutils.AssertHiveNoteCreated(suite.T(), entity.HiveNote{Model: gorm.Model{
+		ID: 100,
 	},
-		CheptelID: test.ValidCheptel.ID,
+		HiveID:    test.ValidHive.ID,
 		Name:      "new name",
+		Operation: "new operation",
 	}, hive, now)
 }
 
@@ -154,10 +193,11 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 
 	validCreateReq := schema.CreateRequest{
-		UserID:    test.ValidUser.ID,
-		CheptelID: test.ValidHive.CheptelID,
-		HiveID:    test.ValidHive.ID,
-		Name:      "new name",
+		UserID:     test.ValidUser.ID,
+		CheptelID:  test.ValidHive.CheptelID,
+		HiveID:     test.ValidHive.ID,
+		HiveNoteID: test.ValidHiveNote.ID,
+		Name:       "new name",
 	}
 
 	invalidCreateReq := validCreateReq.CopyWith(
@@ -171,8 +211,8 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 		req  schema.CreateRequest
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to update the hive", req: validCreateReq, err: test.ErrMock},
-		{name: "Create an hive without a name should return an error", req: invalidCreateReq},
+		{name: "An unknown user of the current cheptel should not be able to update the hive note", req: validCreateReq, err: test.ErrMock},
+		{name: "Create a hive note without a name should return an error", req: invalidCreateReq},
 		{name: "the request should be invalid", req: schema.CreateRequest{}},
 	}
 
@@ -190,12 +230,12 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
-	hives, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
+	hivenotes, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
 		UserID: test.ValidUser.ID,
 	})
 
 	assert.NoError(suite.T(), err)
-	testutils.AssertHives(suite.T(), []entity.Hive{test.ValidHive}, hives)
+	testutils.AssertHiveNotes(suite.T(), []entity.HiveNote{test.ValidHiveNote}, hivenotes)
 
 	assert.Equal(suite.T(), 2, suite.observer.Len())
 }
@@ -209,13 +249,14 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUserFail() {
 func (suite *RepositoryIntegrationSuite) TestDelete() {
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 	req := schema.Request{
-		UserID:    test.ValidUser.ID,
-		CheptelID: test.ValidHive.CheptelID,
-		HiveID:    test.ValidHive.ID,
+		UserID:     test.ValidUser.ID,
+		CheptelID:  test.ValidHive.CheptelID,
+		HiveID:     test.ValidHive.ID,
+		HiveNoteID: test.ValidHiveNote.ID,
 	}
 	err := suite.Service.SoftDelete(suite.ctx, req)
 	assert.NoError(suite.T(), err)
-	err = suite.db.Model(&test.ValidHive).First(&entity.Hive{}).Error
+	err = suite.db.Model(&test.ValidHiveNote).First(&entity.HiveNote{}).Error
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 
@@ -223,9 +264,10 @@ func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
 
 	validReq := schema.Request{
-		UserID:    test.ValidUser.ID,
-		CheptelID: test.ValidHive.CheptelID,
-		HiveID:    test.ValidHive.ID,
+		UserID:     test.ValidUser.ID,
+		CheptelID:  test.ValidHive.CheptelID,
+		HiveID:     test.ValidHive.ID,
+		HiveNoteID: test.ValidHiveNote.ID,
 	}
 
 	testcases := []struct {
@@ -233,7 +275,7 @@ func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
 		req  schema.Request
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to delete the hive", req: validReq, err: test.ErrMock},
+		{name: "An unknown user of the current cheptel should not be able to delete the hive note", req: validReq, err: test.ErrMock},
 		{name: "the request should be invalid", req: schema.Request{}},
 	}
 

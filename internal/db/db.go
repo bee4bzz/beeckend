@@ -56,7 +56,10 @@ func NewGormForTest(dial gorm.Dialector) *gorm.DB {
 		logger.Config{},
 	))
 
-	db.AutoMigrate(&entity.User{}, &entity.Cheptel{}, &entity.Hive{}, &entity.CheptelNote{}, &entity.HiveNote{}, &entity.Album{})
+	err := db.AutoMigrate(&entity.User{}, &entity.Cheptel{}, &entity.Hive{}, &entity.CheptelNote{}, &entity.HiveNote{}, &entity.Album{}, &entity.Photo{})
+	if err != nil {
+		panic("failed to migrate " + err.Error())
+	}
 	return db
 }
 

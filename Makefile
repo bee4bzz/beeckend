@@ -12,3 +12,11 @@ devenv-stop: ## stop all dependencies to test and run the web api (DB, mail, ...
 .PHONY: test
 test: ## run all tests
 	gotestsum --junitfile report.xml --format testname -- ./...
+
+.PHONY: before-commit
+before-commit: test ## run all checks before commit
+	sqlfluff fix -n --disable-progress-bar --dialect postgres migrations/*.sql
+	sqlfluff lint -n --disable-progress-bar --dialect postgres migrations/*.sql
+	@golangci-lint run --timeout=10m
+	@echo "Using config file: ${CONFIG_FILE}"
+	@CONFIG_FILE=${CONFIG_FILE} gotestsum --junitfile report.xml --format testname ./...

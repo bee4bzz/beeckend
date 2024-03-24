@@ -51,8 +51,9 @@ func (suite *RepositoryTestSuite) TestUpdate() {
 	testutils.AssertUserUpdated(suite.T(), entity.User{Model: gorm.Model{
 		ID: test.ValidUser.ID,
 	},
-		Email: test.ValidUser.Email,
-		Name:  "new name",
+		Email:    test.ValidUser.Email,
+		Name:     "new name",
+		Cheptels: test.ValidUser.Cheptels,
 	}, user, now)
 }
 

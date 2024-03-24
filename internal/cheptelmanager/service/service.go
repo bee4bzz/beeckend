@@ -51,11 +51,7 @@ func (s *Service) Create(ctx context.Context, req schema.Request) error {
 		},
 	}
 
-	err = s.Repository.Create(ctx, &entity.User{Model: gorm.Model{ID: req.MemberID}}, &cheptel)
-	if err != nil {
-		return err
-	}
-	return err
+	return s.Repository.Create(ctx, &entity.User{Model: gorm.Model{ID: req.MemberID}}, &cheptel)
 }
 
 // Delete deletes a cheptel association with a user
@@ -89,8 +85,6 @@ func (s *Service) OnlyMember(ctx context.Context, cheptelID, userID uint) error 
 		})
 	if e.Is(err, gorm.ErrRecordNotFound) {
 		return errors.ErrNotMember
-	} else if err != nil {
-		return err
 	}
-	return nil
+	return err
 }

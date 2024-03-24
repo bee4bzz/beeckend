@@ -16,8 +16,8 @@ func (c *Repository) Get(ctx context.Context, hive *entity.Hive) error {
 	return args.Error(0)
 }
 
-func (c *Repository) QueryByUser(ctx context.Context, user entity.User, hives *[]entity.Hive) error {
-	args := c.Called(user, *hives)
+func (c *Repository) QueryByUser(ctx context.Context, user *entity.User, hives *[]entity.Hive) error {
+	args := c.Called(*user, *hives)
 	return args.Error(0)
 }
 func (c *Repository) Create(ctx context.Context, hive *entity.Hive) error {

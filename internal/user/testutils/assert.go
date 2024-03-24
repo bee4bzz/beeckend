@@ -15,7 +15,9 @@ func AssertUser(t *testing.T, expected, actual entity.User) {
 	assert.NotEmpty(t, actual.UpdatedAt, "UpdatedAt should not be empty")
 	assert.Equal(t, expected.Name, actual.Name, "Name should be equal")
 	assert.Equal(t, expected.Email, actual.Email, "Email should be equal")
-	assert.Equal(t, expected.Cheptels, actual.Cheptels, "Cheptels should be equal")
+	for i, expectedCheptel := range expected.Cheptels {
+		assert.Equal(t, expectedCheptel.ID, actual.Cheptels[i].ID, "Cheptel ID should be equal")
+	}
 }
 
 func AssertUserCreated(t *testing.T, expected, actual entity.User, now time.Time) {

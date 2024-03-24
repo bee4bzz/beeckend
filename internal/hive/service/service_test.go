@@ -38,6 +38,11 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.Service = NewService(suite.Repository, suite.CheptelManager, logger)
 }
 
+func (suite *RepositoryTestSuite) TearDownSuite() {
+	suite.CheptelManager.AssertExpectations(suite.T())
+	suite.Repository.AssertExpectations(suite.T())
+}
+
 func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 	suite.Repository.On("QueryByUser", entity.User{
 		Model: gorm.Model{
@@ -51,6 +56,23 @@ func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 	assert.Error(suite.T(), err)
 	assert.Empty(suite.T(), hives)
 	assert.Equal(suite.T(), 2, suite.observer.Len())
+}
+
+func (suite *RepositoryTestSuite) TestDelete() {
+	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
+	suite.Repository.On("SoftDelete", entity.Hive{
+		Model: gorm.Model{
+			ID: test.ValidHive.ID,
+		},
+		CheptelID: test.ValidCheptel.ID,
+	}).Return(nil).Once()
+
+	err := suite.Service.SoftDelete(suite.ctx, schema.Request{
+		UserID:    test.ValidUser.ID,
+		CheptelID: test.ValidCheptel.ID,
+		HiveID:    test.ValidHive.ID,
+	})
+	assert.NoError(suite.T(), err)
 }
 
 func TestRepositoryTestSuite(t *testing.T) {

@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"log"
+	"os"
 	"testing"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type RepositoryTestSuite struct {
@@ -30,9 +33,12 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	mockDb, mock, _ := sqlmock.New()
 	suite.mock = &mock
-	suite.db = db.NewGormForTest(postgres.New(postgres.Config{
+	suite.db = db.NewGorm(postgres.New(postgres.Config{
 		Conn:       mockDb,
 		DriverName: "postgres"},
+	), logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{},
 	))
 	suite.Repository = NewGormRepository(suite.db)
 }

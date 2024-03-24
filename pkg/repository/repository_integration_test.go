@@ -49,7 +49,8 @@ type RepositoryIntegrationSuite struct {
 func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	db, _ := gorm.Open(sqlite.Open(dbName), &gorm.Config{TranslateError: true})
-	db.AutoMigrate(&Mock{}, &MockChild{})
+	err := db.AutoMigrate(&Mock{}, &MockChild{})
+	assert.NoError(suite.T(), err)
 	suite.db = db
 	suite.Repository = NewRepository[Mock](db)
 }

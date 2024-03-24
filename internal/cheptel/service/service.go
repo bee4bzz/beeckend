@@ -15,7 +15,7 @@ type CheptelManager interface {
 
 type Repository interface {
 	Get(ctx context.Context, cheptel *entity.Cheptel) error
-	QueryByUser(ctx context.Context, user entity.User, cheptels *[]entity.Cheptel) error
+	QueryByUser(ctx context.Context, user *entity.User, cheptels *[]entity.Cheptel) error
 	Create(ctx context.Context, cheptel *entity.Cheptel) error
 	Update(ctx context.Context, cheptel *entity.Cheptel) error
 	SoftDelete(ctx context.Context, cheptel *entity.Cheptel) error
@@ -46,7 +46,7 @@ func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]e
 
 	cheptels := []entity.Cheptel{}
 
-	err := s.Repository.QueryByUser(ctx, entity.User{Model: gorm.Model{ID: req.UserID}}, &cheptels)
+	err := s.Repository.QueryByUser(ctx, &entity.User{Model: gorm.Model{ID: req.UserID}}, &cheptels)
 	if err != nil {
 		logger.Error("An error occured when getting the cheptels from the repository")
 		return []entity.Cheptel{}, err

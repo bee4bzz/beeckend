@@ -90,11 +90,9 @@ func (suite *RepositoryIntegrationSuite) TestGet() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestSoftDelete() {
-	cheptel := entity.Cheptel{Model: gorm.Model{ID: 100}}
-	suite.Repository.Create(suite.ctx, &cheptel)
-	err := suite.Repository.SoftDelete(suite.ctx, &cheptel)
+	err := suite.Repository.SoftDelete(suite.ctx, &test.ValidCheptel)
 	assert.NoError(suite.T(), err)
-	err = suite.Repository.Get(suite.ctx, &cheptel)
+	err = suite.Repository.Get(suite.ctx, &test.ValidCheptel)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 

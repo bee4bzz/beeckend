@@ -11,24 +11,24 @@ type Repository struct {
 	mock.Mock
 }
 
-func (c *Repository) Get(ctx context.Context, hive *entity.Hive) error {
+func (c *Repository) Get(ctx context.Context, hive *entity.HiveNote) error {
 	args := c.Called(*hive)
 	return args.Error(0)
 }
 
-func (c *Repository) QueryByUser(ctx context.Context, user entity.User, hives *[]entity.Hive) error {
-	args := c.Called(user, *hives)
+func (c *Repository) QueryByUser(ctx context.Context, user *entity.User, hives *[]entity.HiveNote) error {
+	args := c.Called(*user, *hives)
 	return args.Error(0)
 }
-func (c *Repository) Create(ctx context.Context, hive *entity.Hive) error {
+func (c *Repository) Create(ctx context.Context, hive *entity.HiveNote) error {
 	args := c.Called(*hive)
 	return args.Error(0)
 }
-func (c *Repository) Update(ctx context.Context, hive *entity.Hive) error {
+func (c *Repository) Update(ctx context.Context, hive *entity.HiveNote) error {
 	args := c.Called(*hive)
 	return args.Error(0)
 }
-func (c *Repository) SoftDelete(ctx context.Context, hive *entity.Hive) error {
+func (c *Repository) SoftDelete(ctx context.Context, hive *entity.HiveNote) error {
 	args := c.Called(*hive)
 	return args.Error(0)
 }

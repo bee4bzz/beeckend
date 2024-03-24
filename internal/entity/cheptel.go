@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	UsersKey = "Users"
-	HivesKey = "Hives"
+	UsersKey  = "Users"
+	HivesKey  = "Hives"
+	AlbumsKey = "Albums"
 )
 
 type Cheptel struct {

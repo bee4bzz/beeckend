@@ -27,11 +27,14 @@ func (q QueryRequest) Validate() error {
 }
 
 type CreateRequest struct {
-	UserID     uint   `json:"-"`
-	HiveID     uint   `json:"hive_ID"`
-	HiveNoteID uint   `json:"hive_note_ID"`
-	CheptelID  uint   `json:"cheptel_ID"`
-	Name       string `json:"name"`
+	UserID      uint    `json:"-"`
+	CheptelID   uint    `json:"-"`
+	HiveID      uint    `json:"hive_ID"`
+	HiveNoteID  uint    `json:"hive_note_ID"`
+	Name        string  `json:"name"`
+	NBRisers    uint    `json:"nbrisers"`
+	Operation   string  `json:"operation"`
+	Observation *string `json:"observation"`
 }
 
 func (u CreateRequest) Validate() error {
@@ -44,21 +47,27 @@ func (u CreateRequest) Validate() error {
 
 func (u CreateRequest) CopyWith(new CreateRequest) CreateRequest {
 	return CreateRequest{
-		UserID:     utils.UintOr(new.UserID, u.UserID),
-		CheptelID:  utils.UintOr(new.CheptelID, u.CheptelID),
-		HiveID:     utils.UintOr(new.HiveID, u.HiveID),
-		HiveNoteID: utils.UintOr(new.HiveNoteID, u.HiveNoteID),
-		Name:       utils.StringOr(new.Name, u.Name),
+		UserID:      utils.UintOr(new.UserID, u.UserID),
+		CheptelID:   utils.UintOr(new.CheptelID, u.CheptelID),
+		HiveID:      utils.UintOr(new.HiveID, u.HiveID),
+		HiveNoteID:  utils.UintOr(new.HiveNoteID, u.HiveNoteID),
+		Name:        utils.StringOr(new.Name, u.Name),
+		NBRisers:    utils.UintOr(new.NBRisers, u.NBRisers),
+		Operation:   utils.StringOr(new.Operation, u.Operation),
+		Observation: utils.Or(new.Observation, u.Observation),
 	}
 }
 
 type UpdateRequest struct {
-	UserID     uint   `json:"-"`
-	CheptelID  uint   `json:"-"`
-	HiveID     uint   `json:"-"`
-	HiveNoteID uint   `json:"-"`
-	NewHiveID  uint   `json:"hive_ID"`
-	NewName    string `json:"name"`
+	UserID         uint    `json:"-"`
+	CheptelID      uint    `json:"-"`
+	HiveID         uint    `json:"-"`
+	HiveNoteID     uint    `json:"-"`
+	NewHiveID      uint    `json:"hive_ID"`
+	NewName        string  `json:"name"`
+	NewNBRisers    uint    `json:"nbrisers"`
+	NewOperation   string  `json:"operation"`
+	NewObservation *string `json:"observation"`
 }
 
 func (u UpdateRequest) Validate() error {
@@ -67,11 +76,15 @@ func (u UpdateRequest) Validate() error {
 
 func (u UpdateRequest) CopyWith(new UpdateRequest) UpdateRequest {
 	return UpdateRequest{
-		UserID:     utils.UintOr(new.UserID, u.UserID),
-		CheptelID:  utils.UintOr(new.CheptelID, u.CheptelID),
-		HiveNoteID: utils.UintOr(new.HiveNoteID, u.HiveNoteID),
-		HiveID:     utils.UintOr(new.HiveID, u.HiveID),
-		NewName:    utils.StringOr(new.NewName, u.NewName),
+		UserID:         utils.UintOr(new.UserID, u.UserID),
+		CheptelID:      utils.UintOr(new.CheptelID, u.CheptelID),
+		HiveNoteID:     utils.UintOr(new.HiveNoteID, u.HiveNoteID),
+		HiveID:         utils.UintOr(new.HiveID, u.HiveID),
+		NewName:        utils.StringOr(new.NewName, u.NewName),
+		NewHiveID:      utils.UintOr(new.NewHiveID, u.NewHiveID),
+		NewNBRisers:    utils.UintOr(new.NewNBRisers, u.NewNBRisers),
+		NewOperation:   utils.StringOr(new.NewOperation, u.NewOperation),
+		NewObservation: utils.Or(new.NewObservation, u.NewObservation),
 	}
 }
 

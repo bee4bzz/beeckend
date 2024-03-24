@@ -6,6 +6,7 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/pkg/repository"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type GormRepository struct {
@@ -19,7 +20,7 @@ func NewGormRepository(db *gorm.DB) *GormRepository {
 }
 
 func (r *GormRepository) QueryByUser(ctx context.Context, user *entity.User, hives *[]entity.Hive) error {
-	err := r.DB().WithContext(ctx).Preload(entity.CheptelsKey + "." + entity.HivesKey).Find(user).Error
+	err := r.DB().WithContext(ctx).Preload(entity.CheptelsKey + "." + entity.HivesKey + "." + clause.Associations).Find(user).Error
 	if err != nil {
 		return err
 	}

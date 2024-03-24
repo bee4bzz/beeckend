@@ -19,7 +19,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	chepteltestutils "github.com/gaetanDubuc/beeckend/internal/cheptel/testutils"
+	cheptelmngtestutils "github.com/gaetanDubuc/beeckend/internal/cheptelmanager/testutils"
 )
 
 const (
@@ -31,7 +31,7 @@ type RepositoryIntegrationSuite struct {
 	ctx            context.Context
 	db             *gorm.DB
 	Service        *Service
-	CheptelManager *chepteltestutils.CheptelManager
+	CheptelManager *cheptelmngtestutils.CheptelManager
 	logger         *log.Logger
 	observer       *observer.ObservedLogs
 }
@@ -40,7 +40,7 @@ type RepositoryIntegrationSuite struct {
 func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.db = db.NewGormForTest(sqlite.Open(dbName))
-	suite.CheptelManager = &chepteltestutils.CheptelManager{}
+	suite.CheptelManager = &cheptelmngtestutils.CheptelManager{}
 	logger, obs := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs

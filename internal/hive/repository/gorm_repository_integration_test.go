@@ -93,11 +93,9 @@ func (suite *RepositoryIntegrationSuite) TestGet() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestSoftDelete() {
-	hive := entity.Hive{Model: gorm.Model{ID: 100}}
-	suite.Repository.Create(suite.ctx, &hive)
-	err := suite.Repository.SoftDelete(suite.ctx, &hive)
+	err := suite.Repository.SoftDelete(suite.ctx, &test.ValidHive)
 	assert.NoError(suite.T(), err)
-	err = suite.Repository.Get(suite.ctx, &hive)
+	err = suite.Repository.Get(suite.ctx, &test.ValidHive)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 
@@ -106,7 +104,7 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
 		entity.User
 		len int
 	}{
-		{test.ValidUser, 1},
+		{test.ValidUser, 2},
 		{entity.User{Model: gorm.Model{ID: 100}}, 0},
 	}
 

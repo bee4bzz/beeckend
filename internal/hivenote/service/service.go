@@ -9,27 +9,33 @@ import (
 	"gorm.io/gorm"
 )
 
+type HiveRepository interface {
+	Get(ctx context.Context, hive *entity.Hive) error
+}
+
 type CheptelManager interface {
 	OnlyMember(ctx context.Context, cheptelID, userID uint) error
 }
 
 type Repository interface {
-	Get(ctx context.Context, hive *entity.HiveNote) error
-	QueryByUser(ctx context.Context, user entity.User, hiveNotes *[]entity.HiveNote) error
-	Create(ctx context.Context, hive *entity.HiveNote) error
-	Update(ctx context.Context, hive *entity.HiveNote) error
-	SoftDelete(ctx context.Context, hive *entity.HiveNote) error
+	Get(ctx context.Context, hivenote *entity.HiveNote) error
+	QueryByUser(ctx context.Context, user *entity.User, hiveNotes *[]entity.HiveNote) error
+	Create(ctx context.Context, hivenote *entity.HiveNote) error
+	Update(ctx context.Context, hivenote *entity.HiveNote) error
+	SoftDelete(ctx context.Context, hivenote *entity.HiveNote) error
 }
 
 type Service struct {
 	Repository
+	hiveRepository HiveRepository
 	cheptelManager CheptelManager
 	logger         *log.Logger
 }
 
-func NewService(repository Repository, cheptelManager CheptelManager, logger *log.Logger) *Service {
+func NewService(repository Repository, hiveRepository HiveRepository, cheptelManager CheptelManager, logger *log.Logger) *Service {
 	return &Service{
 		Repository:     repository,
+		hiveRepository: hiveRepository,
 		cheptelManager: cheptelManager,
 		logger:         logger.Named("hive"),
 	}
@@ -46,7 +52,7 @@ func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]e
 
 	hiveNotes := []entity.HiveNote{}
 
-	err := s.Repository.QueryByUser(ctx, entity.User{Model: gorm.Model{ID: req.UserID}}, &hiveNotes)
+	err := s.Repository.QueryByUser(ctx, &entity.User{Model: gorm.Model{ID: req.UserID}}, &hiveNotes)
 	if err != nil {
 		logger.Error("An error occured when getting the hive's notes from the repository")
 		return []entity.HiveNote{}, err
@@ -56,7 +62,7 @@ func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]e
 	return hiveNotes, nil
 }
 
-// Create creates an hive
+// Create creates a hive note
 func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.HiveNote, error) {
 	if err := req.Validate(); err != nil {
 		return entity.HiveNote{}, err
@@ -71,8 +77,11 @@ func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.
 		Model: gorm.Model{
 			ID: req.HiveNoteID,
 		},
-		HiveID: req.HiveID,
-		Name:   req.Name,
+		HiveID:      req.HiveID,
+		Name:        req.Name,
+		NBRisers:    req.NBRisers,
+		Operation:   req.Operation,
+		Observation: req.Observation,
 	}
 
 	err = s.Repository.Create(ctx, &hive)
@@ -82,7 +91,7 @@ func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.
 	return hive, err
 }
 
-// Update updates an hive
+// Update updates a hive note
 func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.HiveNote, error) {
 	if err := req.Validate(); err != nil {
 		return entity.HiveNote{}, err
@@ -94,7 +103,12 @@ func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.
 	}
 
 	if req.NewHiveID != 0 {
-		err := s.cheptelManager.OnlyMember(ctx, req.NewCheptelID, req.UserID)
+		newHive := entity.Hive{Model: gorm.Model{ID: req.NewHiveID}}
+		err := s.hiveRepository.Get(ctx, &newHive)
+		if err != nil {
+			return entity.HiveNote{}, err
+		}
+		err = s.cheptelManager.OnlyMember(ctx, newHive.CheptelID, req.UserID)
 		if err != nil {
 			return entity.HiveNote{}, err
 		}
@@ -104,8 +118,11 @@ func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.
 		Model: gorm.Model{
 			ID: req.HiveNoteID,
 		},
-		HiveID: req.NID,
-		Name:   req.NewName,
+		HiveID:      req.NewHiveID,
+		Name:        req.NewName,
+		NBRisers:    req.NewNBRisers,
+		Operation:   req.NewOperation,
+		Observation: req.NewObservation,
 	}
 
 	err = s.Repository.Update(ctx, &hive)
@@ -115,7 +132,7 @@ func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.
 	return hive, err
 }
 
-// Delete deletes an hive
+// Delete deletes a hive note
 func (s *Service) SoftDelete(ctx context.Context, req schema.Request) error {
 	if err := req.Validate(); err != nil {
 		return err
@@ -130,7 +147,7 @@ func (s *Service) SoftDelete(ctx context.Context, req schema.Request) error {
 		Model: gorm.Model{
 			ID: req.HiveNoteID,
 		},
-		CheptelID: req.CheptelID,
+		HiveID: req.HiveID,
 	}
 
 	return s.Repository.SoftDelete(ctx, &hive)

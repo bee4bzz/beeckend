@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	"github.com/gaetanDubuc/beeckend/internal/hive/schema"
+	"github.com/gaetanDubuc/beeckend/internal/hivenote/schema"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/gaetanDubuc/beeckend/pkg/log"
 	"github.com/stretchr/testify/assert"
@@ -15,6 +15,7 @@ import (
 
 	chepteltestutils "github.com/gaetanDubuc/beeckend/internal/cheptel/testutils"
 	hivetestutils "github.com/gaetanDubuc/beeckend/internal/hive/testutils"
+	hivenotetestutils "github.com/gaetanDubuc/beeckend/internal/hivenote/testutils"
 )
 
 type RepositoryTestSuite struct {
@@ -22,7 +23,8 @@ type RepositoryTestSuite struct {
 	ctx            context.Context
 	Service        *Service
 	CheptelManager *chepteltestutils.CheptelManager
-	Repository     *hivetestutils.Repository
+	Repository     *hivenotetestutils.Repository
+	HiveRepository *hivetestutils.Repository
 	logger         *log.Logger
 	observer       *observer.ObservedLogs
 }
@@ -31,11 +33,12 @@ type RepositoryTestSuite struct {
 func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.CheptelManager = &chepteltestutils.CheptelManager{}
-	suite.Repository = &hivetestutils.Repository{}
+	suite.Repository = &hivenotetestutils.Repository{}
+	suite.HiveRepository = &hivetestutils.Repository{}
 	logger, obs := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
-	suite.Service = NewService(suite.Repository, suite.CheptelManager, logger)
+	suite.Service = NewService(suite.Repository, suite.HiveRepository, suite.CheptelManager, logger)
 }
 
 func (suite *RepositoryTestSuite) TestQueryByUserFail() {
@@ -43,7 +46,7 @@ func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 		Model: gorm.Model{
 			ID: test.ValidUser.ID,
 		},
-	}, []entity.Hive{}).Return(test.ErrMock).Once()
+	}, []entity.HiveNote{}).Return(test.ErrMock).Once()
 
 	hives, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
 		UserID: test.ValidUser.ID,

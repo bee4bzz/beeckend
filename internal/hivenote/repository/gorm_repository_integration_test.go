@@ -94,11 +94,9 @@ func (suite *RepositoryIntegrationSuite) TestGet() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestSoftDelete() {
-	hive := entity.HiveNote{Model: gorm.Model{ID: 100}}
-	suite.Repository.Create(suite.ctx, &hive)
-	err := suite.Repository.SoftDelete(suite.ctx, &hive)
+	err := suite.Repository.SoftDelete(suite.ctx, &test.ValidHiveNote)
 	assert.NoError(suite.T(), err)
-	err = suite.Repository.Get(suite.ctx, &hive)
+	err = suite.Repository.Get(suite.ctx, &test.ValidHiveNote)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 

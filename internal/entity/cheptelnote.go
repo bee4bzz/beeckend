@@ -8,35 +8,21 @@ import (
 )
 
 var (
-	ErrInvalidData = errors.New("invalid data")
+	ErrInvalidData  = errors.New("invalid data")
+	CheptelNotesKey = "Notes"
 )
 
-type weather string
-
-func (self *weather) Scan(value interface{}) error {
-	v, ok := value.(string)
-	if !ok {
-		return ErrInvalidData
-	}
-	*self = weather(v)
-	return nil
-}
-
-func (self weather) Value() (interface{}, error) {
-	return string(self), nil
-}
-
 const (
-	CLOUDY  weather = "CLOUDY"
-	SUNNY   weather = "SUNNY"
-	SNOWY   weather = "SNOWY"
-	RAINY   weather = "RAINY"
-	WINDY   weather = "WINDY"
-	STORMY  weather = "STORMY"
-	FOGGY   weather = "FOGGY"
-	HAZY    weather = "HAZY"
-	OTHER   weather = "OTHER"
-	UNKNOWN weather = "UNKNOWN"
+	CLOUDY  Weather = "CLOUDY"
+	SUNNY   Weather = "SUNNY"
+	SNOWY   Weather = "SNOWY"
+	RAINY   Weather = "RAINY"
+	WINDY   Weather = "WINDY"
+	STORMY  Weather = "STORMY"
+	FOGGY   Weather = "FOGGY"
+	HAZY    Weather = "HAZY"
+	OTHER   Weather = "OTHER"
+	UNKNOWN Weather = "UNKNOWN"
 )
 
 type CheptelNote struct {
@@ -45,7 +31,7 @@ type CheptelNote struct {
 	Name             string `gorm:"not null"`
 	TemperatureDay   *float64
 	TemperatureNight *float64
-	Weather          weather `gorm:"default:'UNKNOWN'"`
+	Weather          Weather `gorm:"default:'UNKNOWN'"`
 	Flora            string  `gorm:"not null"`
 	State            *string
 	Observation      *string
@@ -61,4 +47,19 @@ func (c CheptelNote) Validate() error {
 		validation.Field(&c.State, validation.NilOrNotEmpty),
 		validation.Field(&c.Observation, validation.NilOrNotEmpty),
 	)
+}
+
+type Weather string
+
+func (self *Weather) Scan(value interface{}) error {
+	v, ok := value.(string)
+	if !ok {
+		return ErrInvalidData
+	}
+	*self = Weather(v)
+	return nil
+}
+
+func (self Weather) Value() (interface{}, error) {
+	return string(self), nil
 }
