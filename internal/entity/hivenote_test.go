@@ -14,7 +14,7 @@ var (
 	InvalidHiveNote = HiveNote{
 		NBRisers: MaxNBRisers + 1,
 		Albums: []Album{
-			InvalidAlbum,
+			InValidChetpelAlbum,
 		},
 	}
 	ValidHiveNote = HiveNote{

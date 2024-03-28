@@ -11,10 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type CheptelManager interface {
-	OnlyMember(ctx context.Context, cheptelID, userID uint) error
-}
-
 type Repository interface {
 	Get(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
 	Create(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error

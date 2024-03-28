@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gaetanDubuc/beeckend/internal/album/testutils"
+	"github.com/gaetanDubuc/beeckend/internal/cheptelalbum/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
@@ -67,7 +67,7 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 
 func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 	tc := []entity.Album{
-		test.ValidAlbum,
+		test.ValidChetpelAlbum,
 	}
 	for _, c := range tc {
 		err := suite.Repository.Create(suite.ctx, &c)
@@ -77,24 +77,24 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 
 func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	now := time.Now()
-	album := entity.Album{Model: gorm.Model{ID: test.ValidAlbum.ID}, Name: "new name"}
+	album := entity.Album{Model: gorm.Model{ID: test.ValidChetpelAlbum.ID}, Name: "new name"}
 	err := suite.Repository.Update(suite.ctx, &album)
 	assert.NoError(suite.T(), err)
-	test.ValidAlbum.Name = "new name"
-	testutils.AssertAlbumUpdated(suite.T(), test.ValidAlbum, album, now)
+	test.ValidChetpelAlbum.Name = "new name"
+	testutils.AssertAlbumUpdated(suite.T(), test.ValidChetpelAlbum, album, now)
 }
 
 func (suite *RepositoryIntegrationSuite) TestGet() {
-	album := entity.Album{Model: gorm.Model{ID: test.ValidAlbum.ID}}
+	album := entity.Album{Model: gorm.Model{ID: test.ValidChetpelAlbum.ID}}
 	err := suite.Repository.Get(suite.ctx, &album)
 	assert.NoError(suite.T(), err)
-	testutils.AssertAlbum(suite.T(), test.ValidAlbum, album)
+	testutils.AssertAlbum(suite.T(), test.ValidChetpelAlbum, album)
 }
 
 func (suite *RepositoryIntegrationSuite) TestSoftDelete() {
-	err := suite.Repository.SoftDelete(suite.ctx, &test.ValidAlbum)
+	err := suite.Repository.SoftDelete(suite.ctx, &test.ValidChetpelAlbum)
 	assert.NoError(suite.T(), err)
-	err = suite.Repository.Get(suite.ctx, &test.ValidAlbum)
+	err = suite.Repository.Get(suite.ctx, &test.ValidChetpelAlbum)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 

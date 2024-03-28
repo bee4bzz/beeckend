@@ -8,10 +8,11 @@ import (
 type Request struct {
 	UserID    uint `json:"-"`
 	CheptelID uint `json:"-"`
+	AlbumID   uint `json:"-"`
 }
 
 func (g Request) Validate() error {
-	return Validate(&g, &g.UserID, &g.CheptelID)
+	return Validate(&g, &g.UserID, &g.CheptelID, &g.AlbumID)
 }
 
 type QueryRequest struct {
@@ -25,9 +26,11 @@ func (q QueryRequest) Validate() error {
 }
 
 type CreateRequest struct {
-	UserID    uint   `json:"-"`
-	CheptelID uint   `json:"cheptel_ID"`
-	Name      string `json:"name"`
+	UserID      uint    `json:"-"`
+	CheptelID   uint    `json:"-"`
+	AlbumID     uint    `json:"album_ID"`
+	Name        string  `json:"name"`
+	Observation *string `json:"observation"`
 }
 
 func (u CreateRequest) Validate() error {

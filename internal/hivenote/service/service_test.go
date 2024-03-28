@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"gorm.io/gorm"
 
-	chepteltestutils "github.com/gaetanDubuc/beeckend/internal/cheptel/testutils"
+	cheptelmngtestutils "github.com/gaetanDubuc/beeckend/internal/cheptelmanager/testutils"
 	hivetestutils "github.com/gaetanDubuc/beeckend/internal/hive/testutils"
 	hivenotetestutils "github.com/gaetanDubuc/beeckend/internal/hivenote/testutils"
 )
@@ -22,7 +22,7 @@ type RepositoryTestSuite struct {
 	suite.Suite
 	ctx            context.Context
 	Service        *Service
-	CheptelManager *chepteltestutils.CheptelManager
+	CheptelManager *cheptelmngtestutils.CheptelManager
 	Repository     *hivenotetestutils.Repository
 	HiveRepository *hivetestutils.Repository
 	logger         *log.Logger
@@ -32,7 +32,7 @@ type RepositoryTestSuite struct {
 // this function executes before the test suite begins execution
 func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
-	suite.CheptelManager = &chepteltestutils.CheptelManager{}
+	suite.CheptelManager = &cheptelmngtestutils.CheptelManager{}
 	suite.Repository = &hivenotetestutils.Repository{}
 	suite.HiveRepository = &hivetestutils.Repository{}
 	logger, obs := log.NewForTest()

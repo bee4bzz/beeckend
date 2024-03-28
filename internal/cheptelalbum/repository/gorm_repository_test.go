@@ -78,7 +78,7 @@ func (suite *RepositoryTestSuite) TestQueryCheptelAlbumsByUser() {
 					`SELECT .* 
 					FROM "albums" 
 					WHERE "owner_type" = \$1 AND "albums"\."owner_id" = \$2 AND "albums"\."deleted_at" IS NULL`,
-				).WithArgs("cheptels", test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "owner_type", "owner_id"}).AddRow(test.ValidAlbum.ID, test.ValidAlbum.OwnerType, test.ValidAlbum.OwnerID))
+				).WithArgs("cheptels", test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "owner_type", "owner_id"}).AddRow(test.ValidChetpelAlbum.ID, test.ValidChetpelAlbum.OwnerType, test.ValidChetpelAlbum.OwnerID))
 			},
 		},
 		{
@@ -174,7 +174,7 @@ func (suite *RepositoryTestSuite) TestQueryHiveAlbumsByUser() {
 					WHERE "owner_type" = \$1 AND "albums"\."owner_id" = \$2 AND "albums"\."deleted_at" IS NULL`,
 				).WithArgs("hive_notes", test.ValidHiveNote.ID).WillReturnRows(
 					sqlmock.NewRows([]string{"id", "owner_type", "owner_id"}).AddRow(
-						test.ValidAlbum.ID, test.ValidAlbum.OwnerType, test.ValidAlbum.OwnerID))
+						test.ValidHiveNoteAlbum.ID, test.ValidHiveNoteAlbum.OwnerType, test.ValidHiveNoteAlbum.OwnerID))
 			},
 		},
 		{
@@ -205,6 +205,18 @@ func (suite *RepositoryTestSuite) TestQueryHiveAlbumsByUser() {
 			assert.Len(t, albums, tc.len)
 		})
 	}
+}
+
+func (suite *RepositoryTestSuite) TestQueryHiveAlbumsByUserFail() {
+	(*suite.mock).ExpectQuery(
+		`SELECT .*
+		FROM "users"
+		WHERE "users"."deleted_at" IS NULL AND "users"\."id" = \$1`,
+	).WithArgs(test.ValidUser.ID).WillReturnError(sql.ErrTxDone)
+
+	albums := []entity.Album{}
+	err := suite.Repository.QueryHiveNoteAlbumsByUser(suite.ctx, &test.ValidUser, &albums)
+	assert.ErrorIs(suite.T(), err, sql.ErrTxDone)
 }
 
 func TestRepositoryTestSuite(t *testing.T) {
