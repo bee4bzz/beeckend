@@ -13,7 +13,7 @@ var (
 		},
 		Name:     "ValidUser",
 		Email:    utils.ValidEmail(),
-		Cheptels: []entity.Cheptel{ValidCheptel},
+		Cheptels: []entity.Cheptel{ValidCheptel, ValidCheptel2},
 	}
 
 	ValidCheptel = entity.Cheptel{
@@ -28,6 +28,13 @@ var (
 		Albums: []entity.Album{
 			ValidChetpelAlbum,
 		},
+	}
+
+	ValidCheptel2 = entity.Cheptel{
+		Model: gorm.Model{
+			ID: 3,
+		},
+		Name: "ValidCheptel2",
 	}
 
 	ValidCheptelNote = entity.CheptelNote{

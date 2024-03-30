@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	dbName = "hive.db"
+	dbName = "chetpelNote.db"
 )
 
 type RepositoryIntegrationSuite struct {
@@ -56,6 +56,8 @@ func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
 	db.Seed(suite.T(), suite.db)
+	err := suite.db.Exec("PRAGMA foreign_keys = ON", nil).Error
+	assert.NoError(suite.T(), err)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
@@ -67,33 +69,37 @@ func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptelNote.CheptelID+1, test.ValidUser.ID).Return(nil).Once()
 	now := time.Now()
 
-	hive, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{
+	chetpelNote, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{
 		UserID:       test.ValidUser.ID,
 		CheptelID:    test.ValidCheptelNote.CheptelID,
 		NoteID:       test.ValidCheptelNote.ID,
-		NewCheptelID: test.ValidCheptelNote.CheptelID + 1,
+		NewCheptelID: test.ValidCheptel2.ID,
 		NewName:      "new name"})
 
 	assert.NoError(suite.T(), err)
 	testutils.AssertCheptelNoteUpdated(suite.T(), entity.CheptelNote{Model: gorm.Model{
 		ID: test.ValidCheptelNote.ID,
 	},
-		CheptelID: 10,
+		CheptelID: test.ValidCheptel2.ID,
 		Name:      "new name",
 		Weather:   entity.CLOUDY,
 		Flora:     "new flora",
-	}, hive, now)
+	}, chetpelNote, now)
 }
 
 func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
-	// hive should be not found
+	// chetpelNote should not be found
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptelNote.CheptelID, test.ValidUser.ID).Return(nil).Once()
 
-	// An unknown user of the new cheptel should not be able to update the hive
+	// An unknown user of the new cheptel should not be able to update the chetpelNote
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptelNote.CheptelID, test.ValidUser.ID).Return(nil).Once()
-	suite.CheptelManager.On("OnlyMember", test.ValidCheptelNote.CheptelID+1, test.ValidUser.ID).Return(test.ErrMock).Once()
+	suite.CheptelManager.On("OnlyMember", test.ValidCheptel2.ID, test.ValidUser.ID).Return(test.ErrMock).Once()
 
-	// An unknown user of the current cheptel should not be able to update the hive
+	// An unknown cheptel should fail
+	suite.CheptelManager.On("OnlyMember", test.ValidCheptelNote.CheptelID, test.ValidUser.ID).Return(nil).Once()
+	suite.CheptelManager.On("OnlyMember", uint(100), test.ValidUser.ID).Return(nil).Once()
+
+	// An unknown user of the current cheptel should not be able to update the chetpelNote
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptelNote.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
 
 	validUpdateReq := schema.UpdateRequest{
@@ -101,12 +107,16 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 		CheptelID: test.ValidCheptelNote.CheptelID,
 		NoteID:    test.ValidCheptelNote.ID,
 	}
-	hiveNotFoundReq := validUpdateReq.CopyWith(schema.UpdateRequest{
+	chetpelNoteNotFoundReq := validUpdateReq.CopyWith(schema.UpdateRequest{
 		NoteID: 100,
 	})
 
 	newCheptelReq := validUpdateReq.CopyWith(schema.UpdateRequest{
-		NewCheptelID: test.ValidCheptelNote.CheptelID + 1,
+		NewCheptelID: test.ValidCheptel2.ID,
+	})
+
+	unknownCheptelReq := validUpdateReq.CopyWith(schema.UpdateRequest{
+		NewCheptelID: 100,
 	})
 
 	testcases := []struct {
@@ -114,21 +124,22 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 		req  schema.UpdateRequest
 		err  error
 	}{
-		{name: "hive should be not found", req: hiveNotFoundReq, err: gorm.ErrRecordNotFound},
-		{name: "An unknown user of the new cheptel should not be able to update the hive", req: newCheptelReq, err: test.ErrMock},
-		{name: "An unknown user of the current cheptel should not be able to update the hive", req: validUpdateReq, err: test.ErrMock},
+		{name: "chetpelNote should not be found", req: chetpelNoteNotFoundReq, err: gorm.ErrRecordNotFound},
+		{name: "An unknown user of the new cheptel should not be able to update the chetpelNote", req: newCheptelReq, err: test.ErrMock},
+		{name: "An unknown cheptel should fail", req: unknownCheptelReq, err: gorm.ErrForeignKeyViolated},
+		{name: "An unknown user of the current cheptel should not be able to update the chetpelNote", req: validUpdateReq, err: test.ErrMock},
 		{name: "the request should be invalid", req: schema.UpdateRequest{}},
 	}
 
 	for _, tc := range testcases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			hive, err := suite.Service.Update(suite.ctx, tc.req)
+			chetpelNote, err := suite.Service.Update(suite.ctx, tc.req)
 			if tc.err == nil {
 				assert.Error(t, err)
 			} else {
 				assert.ErrorIs(t, err, tc.err)
 			}
-			assert.Empty(t, hive)
+			assert.Empty(t, chetpelNote)
 		})
 	}
 }
@@ -137,7 +148,7 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
 	now := time.Now()
 
-	hive, err := suite.Service.Create(suite.ctx, schema.CreateRequest{
+	chetpelNote, err := suite.Service.Create(suite.ctx, schema.CreateRequest{
 		UserID:    test.ValidUser.ID,
 		CheptelID: test.ValidCheptel.ID,
 		NoteID:    100,
@@ -154,7 +165,7 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 		Name:      "new name",
 		Weather:   entity.CLOUDY,
 		Flora:     "new flora",
-	}, hive, now)
+	}, chetpelNote, now)
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreateFail() {
@@ -179,20 +190,20 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 		req  schema.CreateRequest
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to update the hive", req: validCreateReq, err: test.ErrMock},
-		{name: "Create an hive without a name should return an error", req: invalidCreateReq},
+		{name: "An unknown user of the current cheptel should not be able to update the chetpelNote", req: validCreateReq, err: test.ErrMock},
+		{name: "Create an chetpelNote without a name should return an error", req: invalidCreateReq},
 		{name: "the request should be invalid", req: schema.CreateRequest{}},
 	}
 
 	for _, tc := range testcases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			hive, err := suite.Service.Create(suite.ctx, tc.req)
+			chetpelNote, err := suite.Service.Create(suite.ctx, tc.req)
 			if tc.err == nil {
 				assert.Error(t, err)
 			} else {
 				assert.ErrorIs(t, err, tc.err)
 			}
-			assert.Empty(t, hive)
+			assert.Empty(t, chetpelNote)
 		})
 	}
 }
@@ -240,7 +251,7 @@ func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
 		req  schema.Request
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to delete the hive", req: validReq, err: test.ErrMock},
+		{name: "An unknown user of the current cheptel should not be able to delete the chetpelNote", req: validReq, err: test.ErrMock},
 		{name: "the request should be invalid", req: schema.Request{}},
 	}
 

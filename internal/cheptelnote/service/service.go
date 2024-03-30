@@ -99,6 +99,14 @@ func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.
 		return entity.CheptelNote{}, err
 	}
 
+	err = s.Repository.Get(ctx, &entity.CheptelNote{
+		Model:     gorm.Model{ID: req.NoteID},
+		CheptelID: req.CheptelID},
+	)
+	if err != nil {
+		return entity.CheptelNote{}, err
+	}
+
 	if req.NewCheptelID != 0 {
 		err := s.cheptelManager.OnlyMember(ctx, req.NewCheptelID, req.UserID)
 		if err != nil {

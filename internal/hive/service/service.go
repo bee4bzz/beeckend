@@ -93,6 +93,18 @@ func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.
 		return entity.Hive{}, err
 	}
 
+	hive := entity.Hive{
+		Model: gorm.Model{
+			ID: req.HiveID,
+		},
+		CheptelID: req.CheptelID,
+	}
+
+	err = s.Repository.Get(ctx, &hive)
+	if err != nil {
+		return entity.Hive{}, err
+	}
+
 	if req.NewCheptelID != 0 {
 		err := s.cheptelManager.OnlyMember(ctx, req.NewCheptelID, req.UserID)
 		if err != nil {
@@ -100,7 +112,7 @@ func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.
 		}
 	}
 
-	hive := entity.Hive{
+	hive = entity.Hive{
 		Model: gorm.Model{
 			ID: req.HiveID,
 		},

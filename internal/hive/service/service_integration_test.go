@@ -56,6 +56,8 @@ func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
 	db.Seed(suite.T(), suite.db)
+	err := suite.db.Exec("PRAGMA foreign_keys = ON", nil).Error
+	assert.NoError(suite.T(), err)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
@@ -71,14 +73,14 @@ func (suite *RepositoryIntegrationSuite) TestUpdate() {
 		UserID:       test.ValidUser.ID,
 		CheptelID:    test.ValidHive.CheptelID,
 		HiveID:       test.ValidHive.ID,
-		NewCheptelID: test.ValidHive.CheptelID + 1,
+		NewCheptelID: test.ValidCheptel2.ID,
 		NewName:      "new name"})
 
 	assert.NoError(suite.T(), err)
 	testutils.AssertHiveUpdated(suite.T(), entity.Hive{Model: gorm.Model{
 		ID: test.ValidHive.ID,
 	},
-		CheptelID: 10,
+		CheptelID: test.ValidCheptel2.ID,
 		Name:      "new name",
 		Notes:     test.ValidHive.Notes,
 	}, hive, now)
@@ -91,6 +93,9 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 	// An unknown user of the new cheptel should not be able to update the hive
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID+1, test.ValidUser.ID).Return(test.ErrMock).Once()
+
+	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
+	suite.CheptelManager.On("OnlyMember", uint(100), test.ValidUser.ID).Return(nil).Once()
 
 	// An unknown user of the current cheptel should not be able to update the hive
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
@@ -108,13 +113,18 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 		NewCheptelID: test.ValidHive.CheptelID + 1,
 	})
 
+	unknownCheptelReq := validUpdateReq.CopyWith(schema.UpdateRequest{
+		NewCheptelID: 100,
+	})
+
 	testcases := []struct {
 		name string
 		req  schema.UpdateRequest
 		err  error
 	}{
-		{name: "hive should be not found", req: hiveNotFoundReq, err: gorm.ErrRecordNotFound},
+		{name: "hive should not be found", req: hiveNotFoundReq, err: gorm.ErrRecordNotFound},
 		{name: "An unknown user of the new cheptel should not be able to update the hive", req: newCheptelReq, err: test.ErrMock},
+		{name: "The new cheptel is unknown", req: unknownCheptelReq, err: gorm.ErrForeignKeyViolated},
 		{name: "An unknown user of the current cheptel should not be able to update the hive", req: validUpdateReq, err: test.ErrMock},
 		{name: "the request should be invalid", req: schema.UpdateRequest{}},
 	}
