@@ -5,6 +5,7 @@ import (
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/stretchr/testify/mock"
+	"gorm.io/gorm"
 )
 
 type CheptelManager struct {
@@ -16,8 +17,18 @@ func (c *CheptelManager) OnlyMember(ctx context.Context, cheptelID, userID uint)
 	return args.Error(0)
 }
 
+func (c *CheptelManager) Create(ctx context.Context, userID, cheptelID uint) error {
+	args := c.Called(userID, cheptelID)
+	return args.Error(0)
+}
+
 type Repository struct {
 	mock.Mock
+}
+
+func (r *Repository) FilterByUserID(ctx context.Context, userID uint) (tx *gorm.DB) {
+	args := r.Called(userID)
+	return args.Get(0).(*gorm.DB)
 }
 
 func (r *Repository) Get(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error {

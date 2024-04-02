@@ -73,7 +73,13 @@ func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.
 		return entity.HiveNote{}, err
 	}
 
-	hive := entity.HiveNote{
+	// check if the hive exists in the cheptel.
+	err = s.hiveRepository.Get(ctx, &entity.Hive{Model: gorm.Model{ID: req.HiveID}, CheptelID: req.CheptelID})
+	if err != nil {
+		return entity.HiveNote{}, err
+	}
+
+	hiveNote := entity.HiveNote{
 		Model: gorm.Model{
 			ID: req.HiveNoteID,
 		},
@@ -84,15 +90,18 @@ func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.
 		Observation: req.Observation,
 	}
 
-	err = s.Repository.Create(ctx, &hive)
+	err = s.Repository.Create(ctx, &hiveNote)
 	if err != nil {
 		return entity.HiveNote{}, err
 	}
-	return hive, err
+	return hiveNote, err
 }
 
 // Update updates a hive note
 func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.HiveNote, error) {
+	logger := s.logger.Named("Update")
+	logger.Debugf("User %v update the hive note", req.UserID)
+
 	if err := req.Validate(); err != nil {
 		return entity.HiveNote{}, err
 	}
@@ -102,34 +111,39 @@ func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.
 		return entity.HiveNote{}, err
 	}
 
-	if req.NewHiveID != 0 {
-		newHive := entity.Hive{Model: gorm.Model{ID: req.NewHiveID}}
-		err := s.hiveRepository.Get(ctx, &newHive)
-		if err != nil {
-			return entity.HiveNote{}, err
-		}
-		err = s.cheptelManager.OnlyMember(ctx, newHive.CheptelID, req.UserID)
-		if err != nil {
-			return entity.HiveNote{}, err
-		}
+	// check if the hive exists in the cheptel.
+	err = s.hiveRepository.Get(ctx,
+		&entity.Hive{
+			Model:     gorm.Model{ID: req.HiveID},
+			CheptelID: req.CheptelID})
+	if err != nil {
+		return entity.HiveNote{}, err
 	}
 
-	hive := entity.HiveNote{
+	// check if the hive note exists in the hive.
+	err = s.Repository.Get(
+		ctx,
+		&entity.HiveNote{Model: gorm.Model{ID: req.HiveNoteID}, HiveID: req.HiveID},
+	)
+	if err != nil {
+		return entity.HiveNote{}, err
+	}
+
+	hiveNote := entity.HiveNote{
 		Model: gorm.Model{
 			ID: req.HiveNoteID,
 		},
-		HiveID:      req.NewHiveID,
 		Name:        req.NewName,
 		NBRisers:    req.NewNBRisers,
 		Operation:   req.NewOperation,
 		Observation: req.NewObservation,
 	}
 
-	err = s.Repository.Update(ctx, &hive)
+	err = s.Repository.Update(ctx, &hiveNote)
 	if err != nil {
 		return entity.HiveNote{}, err
 	}
-	return hive, err
+	return hiveNote, err
 }
 
 // Delete deletes a hive note
@@ -143,12 +157,18 @@ func (s *Service) SoftDelete(ctx context.Context, req schema.Request) error {
 		return err
 	}
 
-	hive := entity.HiveNote{
+	// check if the hive exists in the cheptel.
+	err = s.hiveRepository.Get(ctx, &entity.Hive{Model: gorm.Model{ID: req.HiveID}, CheptelID: req.CheptelID})
+	if err != nil {
+		return err
+	}
+
+	hiveNote := entity.HiveNote{
 		Model: gorm.Model{
 			ID: req.HiveNoteID,
 		},
 		HiveID: req.HiveID,
 	}
 
-	return s.Repository.SoftDelete(ctx, &hive)
+	return s.Repository.SoftDelete(ctx, &hiveNote)
 }

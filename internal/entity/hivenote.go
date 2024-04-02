@@ -5,9 +5,14 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	MaxNBRisers uint = 5
+)
+
 type HiveNote struct {
 	gorm.Model
 	HiveID      uint   `gorm:"index:idx_name_hive_id,unique;not null"`
+	Hive        Hive   `gorm:"foreignKey:HiveID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Name        string `gorm:"index:idx_name_hive_id,unique;not null"`
 	NBRisers    uint   `gorm:"not null"`
 	Operation   string `gorm:"not null"`

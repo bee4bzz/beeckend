@@ -6,14 +6,14 @@ import (
 )
 
 const (
-	HiveNotesKey      = "Notes"
-	MaxNBRisers  uint = 5
+	HiveNotesKey = "Notes"
 )
 
 type Hive struct {
 	gorm.Model
 	Name      string     `gorm:"index:idx_name_cheptel_id,unique;not null"`
 	CheptelID uint       `gorm:"index:idx_name_cheptel_id,unique;not null"`
+	Cheptel   Cheptel    `gorm:"foreignKey:CheptelID;constraint:OnDelete:CASCADE;"`
 	Notes     []HiveNote `gorm:"constraint:OnDelete:CASCADE;"`
 }
 

@@ -92,7 +92,7 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 
 	// An unknown user of the new cheptel should not be able to update the hive
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
-	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID+1, test.ValidUser.ID).Return(test.ErrMock).Once()
+	suite.CheptelManager.On("OnlyMember", test.ValidCheptel2.ID, test.ValidUser.ID).Return(test.ErrMock).Once()
 
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 	suite.CheptelManager.On("OnlyMember", uint(100), test.ValidUser.ID).Return(nil).Once()
@@ -110,7 +110,7 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 	})
 
 	newCheptelReq := validUpdateReq.CopyWith(schema.UpdateRequest{
-		NewCheptelID: test.ValidHive.CheptelID + 1,
+		NewCheptelID: test.ValidCheptel2.ID,
 	})
 
 	unknownCheptelReq := validUpdateReq.CopyWith(schema.UpdateRequest{
@@ -183,7 +183,7 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 		req  schema.CreateRequest
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to update the hive", req: validCreateReq, err: test.ErrMock},
+		{name: "An unknown user of the current cheptel should not be able to create the hive", req: validCreateReq, err: test.ErrMock},
 		{name: "Create an hive without a name should return an error", req: invalidCreateReq},
 		{name: "the request should be invalid", req: schema.CreateRequest{}},
 	}

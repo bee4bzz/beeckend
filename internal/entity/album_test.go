@@ -18,13 +18,13 @@ var (
 	ValidChetpelAlbum = Album{
 		Name:      "Album",
 		OwnerID:   1,
-		OwnerType: "Hive",
+		OwnerType: "cheptels",
 	}
 )
 
 func TestAlbum(t *testing.T) {
 	assert.ErrorContains(t, emptyAlbum.Validate(), "Name: cannot be blank; OwnerID: cannot be blank; OwnerType: cannot be blank.", "Album should not be empty")
-	assert.ErrorContains(t, InValidChetpelAlbum.Validate(), "Observation: cannot be blank.", "Album should not be empty")
+	assert.ErrorContains(t, InValidChetpelAlbum.Validate(), "Observation: cannot be blank; OwnerType: must be a valid value.", "Album should not be empty")
 	assert.NoError(t, ValidChetpelAlbum.Validate(), "Album should be valid")
 }
 

@@ -18,7 +18,7 @@ func NewGormRepository(db *gorm.DB) *GormRepository {
 	}
 }
 
-func (r *GormRepository) QueryCheptelAlbumsByUser(ctx context.Context, user *entity.User, albums *[]entity.Album) error {
+func (r *GormRepository) QueryAlbumsByUser(ctx context.Context, user *entity.User, albums *[]entity.Album) error {
 	err := r.DB().WithContext(ctx).Preload(entity.CheptelsKey + "." + entity.AlbumsKey).Find(user).Error
 	if err != nil {
 		return err

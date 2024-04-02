@@ -51,11 +51,12 @@ func (u CreateRequest) CopyWith(new CreateRequest) CreateRequest {
 type UpdateRequest struct {
 	UserID    uint   `json:"-"`
 	CheptelID uint   `json:"-"`
+	AlbumID   uint   `json:"-"`
 	NewName   string `json:"name"`
 }
 
 func (u UpdateRequest) Validate() error {
-	return Validate(&u, &u.UserID, &u.CheptelID)
+	return Validate(&u, &u.UserID, &u.CheptelID, &u.AlbumID)
 }
 
 func (u UpdateRequest) CopyWith(new UpdateRequest) UpdateRequest {
@@ -66,9 +67,10 @@ func (u UpdateRequest) CopyWith(new UpdateRequest) UpdateRequest {
 	}
 }
 
-func Validate(structPtr any, UserID, CheptelID *uint) error {
+func Validate(structPtr any, UserID, CheptelID, AlbumID *uint) error {
 	return validation.ValidateStruct(structPtr,
 		validation.Field(UserID, validation.Required),
 		validation.Field(CheptelID, validation.Required),
+		validation.Field(AlbumID, validation.Required),
 	)
 }

@@ -54,10 +54,10 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 func (suite *RepositoryTestSuite) TestGet() {
 	(*suite.mock).ExpectQuery(
 		`SELECT 
-		\"cheptels\".\"id\",\"cheptels\".\"created_at\",\"cheptels\".\"updated_at\",\"cheptels\".\"deleted_at\",\"cheptels\".\"name\" 
+		\"cheptels\"\.\"id\",\"cheptels\"\.\"created_at\",\"cheptels\"\.\"updated_at\",\"cheptels\"\.\"deleted_at\",\"cheptels\"\.\"name\" 
 		FROM \"cheptels\" 
-		JOIN \"user_cheptels\" ON \"user_cheptels\".\"cheptel_id\" = \"cheptels\".\"id\" AND \"user_cheptels\".\"user_id\" = \$1 
-		WHERE \"cheptels\".\"deleted_at\" IS NULL AND \"cheptels\".\"id\" = \$2`,
+		JOIN \"user_cheptels\" ON \"user_cheptels\"\.\"cheptel_id\" = \"cheptels\"\.\"id\" AND \"user_cheptels\"\.\"user_id\" = \$1 
+		WHERE \"cheptels\"\.\"deleted_at\" IS NULL AND \"cheptels\"\.\"id\" = \$2`,
 	).WithArgs(test.ValidUser.ID, test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"created_at"}).AddRow(time.Now()))
 
 	testcases := []struct {
@@ -83,17 +83,17 @@ func (suite *RepositoryTestSuite) TestGet() {
 
 func (suite *RepositoryTestSuite) TestGetFail() {
 	(*suite.mock).ExpectQuery(
-		`SELECT \"cheptels\".\"id\",\"cheptels\".\"created_at\",\"cheptels\".\"updated_at\",\"cheptels\".\"deleted_at\",\"cheptels\".\"name\" 
+		`SELECT \"cheptels\"\.\"id\",\"cheptels\"\.\"created_at\",\"cheptels\"\.\"updated_at\",\"cheptels\"\.\"deleted_at\",\"cheptels\"\.\"name\" 
 		FROM \"cheptels\" 
-		JOIN \"user_cheptels\" ON \"user_cheptels\".\"cheptel_id\" = \"cheptels\".\"id\" AND \"user_cheptels\".\"user_id\" = \$1 
-		WHERE \"cheptels\".\"deleted_at\" IS NULL`,
+		JOIN \"user_cheptels\" ON \"user_cheptels\"\.\"cheptel_id\" = \"cheptels\"\.\"id\" AND \"user_cheptels\"\.\"user_id\" = \$1 
+		WHERE \"cheptels\"\.\"deleted_at\" IS NULL`,
 	).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 	(*suite.mock).ExpectQuery(
-		`SELECT \"cheptels\".\"id\",\"cheptels\".\"created_at\",\"cheptels\".\"updated_at\",\"cheptels\".\"deleted_at\",\"cheptels\".\"name\" 
+		`SELECT \"cheptels\"\.\"id\",\"cheptels\"\.\"created_at\",\"cheptels\"\.\"updated_at\",\"cheptels\"\.\"deleted_at\",\"cheptels\"\.\"name\" 
 		FROM \"cheptels\" 
-		JOIN \"user_cheptels\" ON \"user_cheptels\".\"cheptel_id\" = \"cheptels\".\"id\" AND \"user_cheptels\".\"user_id\" = \$1 
-		WHERE \"cheptels\".\"deleted_at\" IS NULL`,
+		JOIN \"user_cheptels\" ON \"user_cheptels\"\.\"cheptel_id\" = \"cheptels\"\.\"id\" AND \"user_cheptels\"\.\"user_id\" = \$1 
+		WHERE \"cheptels\"\.\"deleted_at\" IS NULL`,
 	).WithArgs(test.ValidUser.ID).WillReturnError(sql.ErrTxDone)
 
 	testcases := []struct {
@@ -119,6 +119,19 @@ func (suite *RepositoryTestSuite) TestGetFail() {
 			assert.ErrorIs(suite.T(), err, tc.err)
 		})
 	}
+}
+
+func (suite *RepositoryTestSuite) TestFilterByUser() {
+	(*suite.mock).ExpectQuery(
+		`SELECT \"hives\".\"id\",\"hives\".\"created_at\",\"hives\".\"updated_at\",\"hives\".\"deleted_at\",\"hives\".\"name\",\"hives\".\"cheptel_id\",\"Cheptel\".\"id\" AS \"Cheptel__id\",\"Cheptel\".\"created_at\" AS \"Cheptel__created_at\",\"Cheptel\".\"updated_at\" AS \"Cheptel__updated_at\",\"Cheptel\".\"deleted_at\" AS \"Cheptel__deleted_at\",\"Cheptel\".\"name\" AS \"Cheptel__name\"
+		FROM \"hives\" 
+		INNER JOIN user_cheptels ON user_cheptels.\"user_id\" = \$1 AND user_cheptels.\"cheptel_id\" = Cheptel.\"id\"
+		LEFT JOIN \"cheptels\" \"Cheptel\" ON \"hives\".\"cheptel_id\" = \"Cheptel\".\"id\" AND \(\"Cheptel\".\"deleted_at\" IS NULL AND \(\"Cheptel\".\"id\" = \$2 AND \"Cheptel\".\"name\" = \$3\)\)
+		WHERE \"hives\".\"deleted_at\" IS NULL`,
+	).WithArgs(test.ValidUser.ID, test.ValidCheptel.ID, test.ValidCheptel.Name).WillReturnRows(sqlmock.NewRows([]string{"id"}))
+
+	err := suite.Repository.FilterByUserID(suite.ctx, test.ValidUser.ID).Joins("Cheptel", suite.db.Where(test.ValidCheptel)).Find(&entity.Hive{}).Error
+	assert.NoError(suite.T(), err)
 }
 
 func (suite *RepositoryTestSuite) TestUpdate() {

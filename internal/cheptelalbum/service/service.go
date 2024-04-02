@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"github.com/gaetanDubuc/beeckend/internal/cheptel/schema"
+	"github.com/gaetanDubuc/beeckend/internal/cheptelalbum/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	log "github.com/gaetanDubuc/beeckend/pkg/log"
 	"gorm.io/gorm"
@@ -63,8 +63,10 @@ func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.
 	}
 
 	album := entity.Album{
-		Name:      req.Name,
-		CheptelID: req.CheptelID,
+		Name:        req.Name,
+		Observation: req.Observation,
+		OwnerID:     req.CheptelID,
+		OwnerType:   entity.OwnerCheptel,
 	}
 
 	if err := s.Repository.Create(ctx, &album); err != nil {

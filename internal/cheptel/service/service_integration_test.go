@@ -19,7 +19,9 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-	cheptelmngtestutils "github.com/gaetanDubuc/beeckend/internal/cheptelmanager/testutils"
+	"github.com/gaetanDubuc/beeckend/internal/cheptelmanager/errors"
+	cheptelmngrepo "github.com/gaetanDubuc/beeckend/internal/cheptelmanager/repository"
+	"github.com/gaetanDubuc/beeckend/internal/cheptelmanager/service"
 )
 
 const (
@@ -28,23 +30,25 @@ const (
 
 type RepositoryIntegrationSuite struct {
 	suite.Suite
-	ctx            context.Context
-	db             *gorm.DB
-	Service        *Service
-	CheptelManager *cheptelmngtestutils.CheptelManager
-	logger         *log.Logger
-	observer       *observer.ObservedLogs
+	ctx                      context.Context
+	db                       *gorm.DB
+	Service                  *Service
+	CheptelManager           *service.Service
+	CheptelManagerRepository *cheptelmngrepo.GormRepository
+	logger                   *log.Logger
+	observer                 *observer.ObservedLogs
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.db = db.NewGormForTest(sqlite.Open(dbName))
-	suite.CheptelManager = &cheptelmngtestutils.CheptelManager{}
+	suite.CheptelManagerRepository = cheptelmngrepo.NewGormRepository(suite.db)
+	suite.CheptelManager = &service.Service{Repository: suite.CheptelManagerRepository}
 	logger, obs := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
-	suite.Service = NewService(repository.NewGormRepository(suite.db), suite.CheptelManager, suite.logger)
+	suite.Service = NewService(repository.NewGormRepository(suite.db), suite.CheptelManager, suite.CheptelManagerRepository, suite.logger)
 }
 
 // this function executes after all tests executed
@@ -63,8 +67,6 @@ func (suite *RepositoryIntegrationSuite) TearDownTest() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestUpdate() {
-	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
-	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID+1, test.ValidUser.ID).Return(nil).Once()
 	now := time.Now()
 
 	cheptel, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{
@@ -74,25 +76,25 @@ func (suite *RepositoryIntegrationSuite) TestUpdate() {
 
 	assert.NoError(suite.T(), err)
 	testutils.AssertCheptelUpdated(suite.T(), entity.Cheptel{Model: gorm.Model{
-		ID: test.ValidCheptel.ID,
+		ID:        test.ValidCheptel.ID,
+		CreatedAt: test.ValidCheptel.CreatedAt,
+		UpdatedAt: now,
 	},
-		Name: "new name",
+		Name:   "new name",
+		Hives:  test.ValidCheptel.Hives,
+		Notes:  test.ValidCheptel.Notes,
+		Albums: test.ValidCheptel.Albums,
+		Users:  test.ValidCheptel.Users,
 	}, cheptel, now)
 }
 
 func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
-	// cheptel should be not found
-	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID+1, test.ValidUser.ID).Return(nil).Once()
-
-	// An unknown user of the current cheptel should not be able to update the cheptel
-	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(test.ErrMock).Once()
-
 	validUpdateReq := schema.UpdateRequest{
-		UserID:    test.ValidUser.ID,
+		UserID:    100,
 		CheptelID: test.ValidCheptel.ID,
 	}
 	cheptelNotFoundReq := validUpdateReq.CopyWith(schema.UpdateRequest{
-		CheptelID: test.ValidCheptel.ID + 1,
+		CheptelID: 100,
 	})
 
 	testcases := []struct {
@@ -100,8 +102,8 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 		req  schema.UpdateRequest
 		err  error
 	}{
-		{name: "cheptel should be not found", req: cheptelNotFoundReq, err: gorm.ErrRecordNotFound},
-		{name: "An unknown user of the current cheptel should not be able to update the cheptel", req: validUpdateReq, err: test.ErrMock},
+		{name: "cheptel should be not found", req: cheptelNotFoundReq, err: errors.ErrNotMember},
+		{name: "An unknown user of the current cheptel should not be able to update the cheptel", req: validUpdateReq, err: errors.ErrNotMember},
 		{name: "the request should be invalid", req: schema.UpdateRequest{}},
 	}
 
@@ -119,29 +121,25 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreate() {
-	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID+1, test.ValidUser.ID).Return(nil).Once()
 	now := time.Now()
 
 	cheptel, err := suite.Service.Create(suite.ctx, schema.CreateRequest{
 		UserID:    test.ValidUser.ID,
-		CheptelID: test.ValidCheptel.ID + 1,
+		CheptelID: uint(100),
 		Name:      "new name"})
 
 	assert.NoError(suite.T(), err)
 	testutils.AssertCheptelCreated(suite.T(), entity.Cheptel{Model: gorm.Model{
-		ID: test.ValidCheptel.ID + 1,
+		ID: 100,
 	},
 		Name: "new name",
 	}, cheptel, now)
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreateFail() {
-	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(test.ErrMock).Once()
-	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
-
 	validCreateReq := schema.CreateRequest{
-		UserID:    test.ValidUser.ID,
-		CheptelID: test.ValidCheptel.ID,
+		UserID:    100,
+		CheptelID: 100,
 		Name:      "new name",
 	}
 
@@ -156,7 +154,7 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 		req  schema.CreateRequest
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to update the cheptel", req: validCreateReq, err: test.ErrMock},
+		{name: "An unknown user of the current cheptel should not be able to create the cheptel", req: validCreateReq, err: gorm.ErrForeignKeyViolated},
 		{name: "Create an cheptel without a name should return an error", req: invalidCreateReq},
 		{name: "the request should be invalid", req: schema.CreateRequest{}},
 	}
@@ -180,7 +178,7 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
 	})
 
 	assert.NoError(suite.T(), err)
-	testutils.AssertCheptels(suite.T(), []entity.Cheptel{test.ValidCheptel}, cheptels)
+	testutils.AssertCheptels(suite.T(), []entity.Cheptel{test.ValidCheptel, test.ValidCheptel2}, cheptels)
 
 	assert.Equal(suite.T(), 2, suite.observer.Len())
 }
@@ -192,22 +190,19 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUserFail() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestDelete() {
-	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
 	req := schema.Request{
 		UserID:    test.ValidUser.ID,
 		CheptelID: test.ValidCheptel.ID,
 	}
 	err := suite.Service.SoftDelete(suite.ctx, req)
 	assert.NoError(suite.T(), err)
-	err = suite.db.Model(&test.ValidCheptel).First(&entity.Cheptel{}).Error
+	err = suite.db.Model(&entity.Cheptel{}).First(&test.ValidCheptel).Error
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 
 func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
-	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(test.ErrMock).Once()
-
 	validReq := schema.Request{
-		UserID:    test.ValidUser.ID,
+		UserID:    100,
 		CheptelID: test.ValidCheptel.ID,
 	}
 
@@ -216,7 +211,7 @@ func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
 		req  schema.Request
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to delete the cheptel", req: validReq, err: test.ErrMock},
+		{name: "An unknown user of the current cheptel should not be able to delete the cheptel", req: validReq, err: errors.ErrNotMember},
 		{name: "the request should be invalid", req: schema.Request{}},
 	}
 

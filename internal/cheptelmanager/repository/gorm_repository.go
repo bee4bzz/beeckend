@@ -27,6 +27,10 @@ func (r *GormRepository) Get(ctx context.Context, user *entity.User, cheptel *en
 	return nil
 }
 
+func (r *GormRepository) FilterByUserID(ctx context.Context, userID uint) (tx *gorm.DB) {
+	return r.db.Joins("INNER JOIN user_cheptels ON user_cheptels.\"user_id\" = ? AND user_cheptels.\"cheptel_id\" = Cheptel.\"id\"", userID)
+}
+
 func (r *GormRepository) Create(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error {
 	return r.db.Model(user).Omit(entity.CheptelsKey + ".*").Association(entity.CheptelsKey).Append(cheptel)
 }

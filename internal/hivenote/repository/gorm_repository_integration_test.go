@@ -67,13 +67,19 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreateFail() {
-	tc := []entity.HiveNote{
-		test.ValidHiveNote,
-		{HiveID: test.ValidHiveNote.HiveID, Name: test.ValidHiveNote.Name, Operation: test.ValidHiveNote.Operation},
+	testcases := []struct {
+		hiveNote entity.HiveNote
+		err      error
+	}{
+		{test.ValidHiveNote, gorm.ErrDuplicatedKey},
+		{entity.HiveNote{HiveID: test.ValidHiveNote.HiveID, Name: test.ValidHiveNote.Name, Operation: test.ValidHiveNote.Operation},
+			gorm.ErrDuplicatedKey},
+		{entity.HiveNote{HiveID: 100, Name: test.ValidHiveNote.Name, Operation: test.ValidHiveNote.Operation},
+			gorm.ErrForeignKeyViolated},
 	}
-	for _, c := range tc {
-		err := suite.Repository.Create(suite.ctx, &c)
-		assert.ErrorIs(suite.T(), err, gorm.ErrDuplicatedKey)
+	for _, tc := range testcases {
+		err := suite.Repository.Create(suite.ctx, &tc.hiveNote)
+		assert.ErrorIs(suite.T(), err, tc.err)
 	}
 }
 

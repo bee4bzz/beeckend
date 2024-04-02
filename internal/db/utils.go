@@ -10,7 +10,11 @@ import (
 
 func Seed(t *testing.T, db *gorm.DB) {
 	t.Helper()
-	for _, ptr := range []any{&test.ValidUser, &test.ValidHive2} {
+	err := db.Exec("PRAGMA foreign_keys = ON", nil).Error
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ptr := range []any{&test.ValidUsers} {
 		err := db.Create(ptr).Error
 		if err != nil {
 			t.Fatal(err)

@@ -13,6 +13,10 @@ type CheptelManager interface {
 	OnlyMember(ctx context.Context, cheptelID, userID uint) error
 }
 
+type CheptelManagerRepository interface {
+	Create(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
+}
+
 type Repository interface {
 	Get(ctx context.Context, cheptel *entity.Cheptel) error
 	QueryByUser(ctx context.Context, user *entity.User, cheptels *[]entity.Cheptel) error
@@ -23,15 +27,17 @@ type Repository interface {
 
 type Service struct {
 	Repository
-	cheptelManager CheptelManager
-	logger         *log.Logger
+	cheptelManager           CheptelManager
+	cheptelManagerRepository CheptelManagerRepository
+	logger                   *log.Logger
 }
 
-func NewService(repository Repository, cheptelManager CheptelManager, logger *log.Logger) *Service {
+func NewService(repository Repository, cheptelManager CheptelManager, cheptelManagerRepository CheptelManagerRepository, logger *log.Logger) *Service {
 	return &Service{
-		Repository:     repository,
-		cheptelManager: cheptelManager,
-		logger:         logger.Named("cheptel"),
+		Repository:               repository,
+		cheptelManager:           cheptelManager,
+		cheptelManagerRepository: cheptelManagerRepository,
+		logger:                   logger.Named("cheptel"),
 	}
 }
 
@@ -62,11 +68,6 @@ func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.
 		return entity.Cheptel{}, err
 	}
 
-	err := s.cheptelManager.OnlyMember(ctx, req.CheptelID, req.UserID)
-	if err != nil {
-		return entity.Cheptel{}, err
-	}
-
 	cheptel := entity.Cheptel{
 		Model: gorm.Model{
 			ID: req.CheptelID,
@@ -74,7 +75,12 @@ func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.
 		Name: req.Name,
 	}
 
-	err = s.Repository.Create(ctx, &cheptel)
+	err := s.Repository.Create(ctx, &cheptel)
+	if err != nil {
+		return entity.Cheptel{}, err
+	}
+
+	err = s.cheptelManagerRepository.Create(ctx, &entity.User{Model: gorm.Model{ID: req.UserID}}, &cheptel)
 	if err != nil {
 		return entity.Cheptel{}, err
 	}

@@ -13,6 +13,7 @@ import (
 
 type Repository interface {
 	Get(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
+	FilterByUserID(ctx context.Context, userID uint) (tx *gorm.DB)
 	Create(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
 	Update(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
 	SoftDelete(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error

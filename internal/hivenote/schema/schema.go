@@ -16,6 +16,15 @@ func (g Request) Validate() error {
 	return Validate(&g, &g.UserID, &g.CheptelID, &g.HiveID, &g.HiveNoteID)
 }
 
+func (g Request) CopyWith(new Request) Request {
+	return Request{
+		UserID:     utils.UintOr(new.UserID, g.UserID),
+		CheptelID:  utils.UintOr(new.CheptelID, g.CheptelID),
+		HiveID:     utils.UintOr(new.HiveID, g.HiveID),
+		HiveNoteID: utils.UintOr(new.HiveNoteID, g.HiveNoteID),
+	}
+}
+
 type QueryRequest struct {
 	UserID uint `json:"-"`
 }
@@ -63,7 +72,6 @@ type UpdateRequest struct {
 	CheptelID      uint    `json:"-"`
 	HiveID         uint    `json:"-"`
 	HiveNoteID     uint    `json:"-"`
-	NewHiveID      uint    `json:"hive_ID"`
 	NewName        string  `json:"name"`
 	NewNBRisers    uint    `json:"nbrisers"`
 	NewOperation   string  `json:"operation"`
@@ -81,7 +89,6 @@ func (u UpdateRequest) CopyWith(new UpdateRequest) UpdateRequest {
 		HiveNoteID:     utils.UintOr(new.HiveNoteID, u.HiveNoteID),
 		HiveID:         utils.UintOr(new.HiveID, u.HiveID),
 		NewName:        utils.StringOr(new.NewName, u.NewName),
-		NewHiveID:      utils.UintOr(new.NewHiveID, u.NewHiveID),
 		NewNBRisers:    utils.UintOr(new.NewNBRisers, u.NewNBRisers),
 		NewOperation:   utils.StringOr(new.NewOperation, u.NewOperation),
 		NewObservation: utils.Or(new.NewObservation, u.NewObservation),

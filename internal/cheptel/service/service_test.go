@@ -19,23 +19,25 @@ import (
 
 type RepositoryTestSuite struct {
 	suite.Suite
-	ctx            context.Context
-	Service        *Service
-	CheptelManager *cheptelmngtestutils.CheptelManager
-	Repository     *chepteltestutils.Repository
-	logger         *log.Logger
-	observer       *observer.ObservedLogs
+	ctx                      context.Context
+	Service                  *Service
+	CheptelManager           *cheptelmngtestutils.CheptelManager
+	CheptelManagerRepository *cheptelmngtestutils.Repository
+	Repository               *chepteltestutils.Repository
+	logger                   *log.Logger
+	observer                 *observer.ObservedLogs
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.CheptelManager = &cheptelmngtestutils.CheptelManager{}
+	suite.CheptelManagerRepository = &cheptelmngtestutils.Repository{}
 	suite.Repository = &chepteltestutils.Repository{}
 	logger, obs := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
-	suite.Service = NewService(suite.Repository, suite.CheptelManager, logger)
+	suite.Service = NewService(suite.Repository, suite.CheptelManager, suite.CheptelManagerRepository, logger)
 }
 
 func (suite *RepositoryTestSuite) TestQueryByUserFail() {
@@ -50,6 +52,19 @@ func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 	})
 	assert.Error(suite.T(), err)
 	assert.Empty(suite.T(), cheptels)
+	assert.Equal(suite.T(), 2, suite.observer.Len())
+}
+
+func (suite *RepositoryTestSuite) TestUpdateFail() {
+	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
+	suite.Repository.On("Update", entity.Cheptel{Model: gorm.Model{ID: test.ValidCheptel.ID}}).Return(test.ErrMock).Once()
+
+	cheptel, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{
+		UserID:    test.ValidUser.ID,
+		CheptelID: test.ValidCheptel.ID,
+	})
+	assert.Error(suite.T(), err)
+	assert.Empty(suite.T(), cheptel)
 	assert.Equal(suite.T(), 2, suite.observer.Len())
 }
 

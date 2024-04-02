@@ -139,6 +139,27 @@ func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
 	}
 }
 
+func (suite *RepositoryIntegrationSuite) TestOnlyMember() {
+	err := suite.Service.OnlyMember(suite.ctx, test.ValidCheptel.ID, test.ValidUser.ID)
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *RepositoryIntegrationSuite) TestOnlyMemberFail() {
+	testcases := []struct {
+		name string
+		err  error
+	}{
+		{name: "An unknown user of the current cheptel should fail", err: errors.ErrNotMember},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			err := suite.Service.OnlyMember(suite.ctx, test.ValidCheptel.ID, 100)
+			assert.ErrorIs(t, err, tc.err)
+		})
+	}
+}
+
 func TestRepositoryIntegrationSuite(t *testing.T) {
 	suite.Run(t, new(RepositoryIntegrationSuite))
 }

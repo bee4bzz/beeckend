@@ -56,8 +56,6 @@ func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
 	db.Seed(suite.T(), suite.db)
-	err := suite.db.Exec("PRAGMA foreign_keys = ON", nil).Error
-	assert.NoError(suite.T(), err)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
