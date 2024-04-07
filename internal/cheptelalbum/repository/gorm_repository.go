@@ -18,31 +18,9 @@ func NewGormRepository(db *gorm.DB) *GormRepository {
 	}
 }
 
-func (r *GormRepository) QueryAlbumsByUser(ctx context.Context, user *entity.User, albums *[]entity.Album) error {
-	err := r.DB().WithContext(ctx).Preload(entity.CheptelsKey + "." + entity.AlbumsKey).Find(user).Error
-	if err != nil {
-		return err
-	}
-	for _, cheptel := range user.Cheptels {
-		*albums = append(*albums, cheptel.Albums...)
-
-	}
-	return err
-}
-
-func (r *GormRepository) QueryHiveNoteAlbumsByUser(ctx context.Context, user *entity.User, albums *[]entity.Album) error {
-	err := r.DB().WithContext(ctx).Preload(
-		entity.CheptelsKey + "." + entity.HivesKey + "." + entity.HiveNotesKey + "." + entity.AlbumsKey,
-	).Find(user).Error
-	if err != nil {
-		return err
-	}
-	for _, cheptel := range user.Cheptels {
-		for _, hive := range cheptel.Hives {
-			for _, note := range hive.Notes {
-				*albums = append(*albums, note.Albums...)
-			}
-		}
-	}
+func (r *GormRepository) QueryByOwnerIDs(ctx context.Context, IDs []any, albumOwner entity.AlbumOwner, albums *[]entity.Album) error {
+	err := r.DB().WithContext(ctx).Where(&entity.Album{
+		OwnerType: albumOwner,
+	}).Where("owner_id IN (?)", IDs).Find(albums).Error
 	return err
 }

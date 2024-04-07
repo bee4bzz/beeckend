@@ -34,36 +34,52 @@ type CreateRequest struct {
 }
 
 func (u CreateRequest) Validate() error {
+	err := Validate(&u, &u.UserID, &u.CheptelID, &u.AlbumID)
+	if err != nil {
+		return err
+	}
 	return validation.ValidateStruct(&u,
-		validation.Field(&u.UserID, validation.Required),
-		validation.Field(&u.CheptelID, validation.Required),
+		validation.Field(&u.Name, validation.Required),
+		validation.Field(&u.Observation, validation.NilOrNotEmpty),
 	)
 }
 
 func (u CreateRequest) CopyWith(new CreateRequest) CreateRequest {
 	return CreateRequest{
-		UserID:    utils.UintOr(new.UserID, u.UserID),
-		CheptelID: utils.UintOr(new.CheptelID, u.CheptelID),
-		Name:      utils.StringOr(new.Name, u.Name),
+		UserID:      utils.UintOr(new.UserID, u.UserID),
+		CheptelID:   utils.UintOr(new.CheptelID, u.CheptelID),
+		AlbumID:     utils.UintOr(new.AlbumID, u.AlbumID),
+		Name:        utils.StringOr(new.Name, u.Name),
+		Observation: utils.Or(new.Observation, u.Observation),
 	}
 }
 
 type UpdateRequest struct {
-	UserID    uint   `json:"-"`
-	CheptelID uint   `json:"-"`
-	AlbumID   uint   `json:"-"`
-	NewName   string `json:"name"`
+	UserID         uint    `json:"-"`
+	CheptelID      uint    `json:"-"`
+	AlbumID        uint    `json:"-"`
+	NewCheptelID   uint    `json:"cheptel_ID"`
+	NewName        string  `json:"name"`
+	NewObservation *string `json:"observation"`
 }
 
 func (u UpdateRequest) Validate() error {
-	return Validate(&u, &u.UserID, &u.CheptelID, &u.AlbumID)
+	err := Validate(&u, &u.UserID, &u.CheptelID, &u.AlbumID)
+	if err != nil {
+		return err
+	}
+	return validation.ValidateStruct(&u,
+		validation.Field(&u.NewObservation, validation.NilOrNotEmpty),
+	)
 }
 
 func (u UpdateRequest) CopyWith(new UpdateRequest) UpdateRequest {
 	return UpdateRequest{
-		UserID:    utils.UintOr(new.UserID, u.UserID),
-		CheptelID: utils.UintOr(new.CheptelID, u.CheptelID),
-		NewName:   utils.StringOr(new.NewName, u.NewName),
+		UserID:         utils.UintOr(new.UserID, u.UserID),
+		CheptelID:      utils.UintOr(new.CheptelID, u.CheptelID),
+		AlbumID:        utils.UintOr(new.AlbumID, u.AlbumID),
+		NewName:        utils.StringOr(new.NewName, u.NewName),
+		NewObservation: utils.Or(new.NewObservation, u.NewObservation),
 	}
 }
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/gaetanDubuc/beeckend/internal/cheptel/schema"
+	"github.com/gaetanDubuc/beeckend/internal/cheptelalbum/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/gaetanDubuc/beeckend/pkg/log"
@@ -13,28 +13,32 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"gorm.io/gorm"
 
+	chepteltestutils "github.com/gaetanDubuc/beeckend/internal/cheptel/testutils"
+	cheptelalbumtestutils "github.com/gaetanDubuc/beeckend/internal/cheptelalbum/testutils"
 	cheptelmngtestutils "github.com/gaetanDubuc/beeckend/internal/cheptelmanager/testutils"
 )
 
 type RepositoryTestSuite struct {
 	suite.Suite
-	ctx            context.Context
-	Service        *Service
-	CheptelManager *cheptelmngtestutils.CheptelManager
-	Repository     *cheptelmngtestutils.Repository
-	logger         *log.Logger
-	observer       *observer.ObservedLogs
+	ctx               context.Context
+	Service           *Service
+	CheptelManager    *cheptelmngtestutils.CheptelManager
+	cheptelRepository *chepteltestutils.Repository
+	Repository        *cheptelalbumtestutils.Repository
+	logger            *log.Logger
+	observer          *observer.ObservedLogs
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.CheptelManager = &cheptelmngtestutils.CheptelManager{}
-	suite.Repository = &cheptelmngtestutils.Repository{}
+	suite.cheptelRepository = &chepteltestutils.Repository{}
+	suite.Repository = &cheptelalbumtestutils.Repository{}
 	logger, obs := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
-	suite.Service = NewService(suite.Repository, suite.CheptelManager, logger)
+	suite.Service = NewService(suite.Repository, suite.cheptelRepository, suite.CheptelManager, logger)
 }
 
 func (suite *RepositoryTestSuite) TestQueryByUserFail() {

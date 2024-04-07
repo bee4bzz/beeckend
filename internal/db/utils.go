@@ -4,17 +4,17 @@ import (
 	"testing"
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	"github.com/gaetanDubuc/beeckend/internal/test"
 	"gorm.io/gorm"
 )
 
-func Seed(t *testing.T, db *gorm.DB) {
+// TODO: implment these functions in test package
+func Seed(t *testing.T, db *gorm.DB, values ...any) {
 	t.Helper()
 	err := db.Exec("PRAGMA foreign_keys = ON", nil).Error
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, ptr := range []any{&test.ValidUsers} {
+	for _, ptr := range values {
 		err := db.Create(ptr).Error
 		if err != nil {
 			t.Fatal(err)

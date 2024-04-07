@@ -5,19 +5,19 @@ import (
 	"gorm.io/gorm"
 )
 
-type AlbumOwner string
+type AlbumType string
 
 const (
-	OwnerCheptel AlbumOwner = "cheptels"
+	Cheptels AlbumType = "cheptels"
 )
 
 type Album struct {
 	gorm.Model
 	Name        string `gorm:"index:idx_name_owner_id,unique;not null"`
 	Observation *string
-	OwnerID     uint       `gorm:"index:idx_name_owner_id,unique;not null"`
-	OwnerType   AlbumOwner `gorm:"not null"`
-	Photos      []Photo    `gorm:"constraint:OnDelete:CASCADE;"`
+	OwnerID     uint      `gorm:"index:idx_name_owner_id,unique;not null"`
+	OwnerType   AlbumType `gorm:"not null"`
+	Photos      []Photo   `gorm:"constraint:OnDelete:CASCADE;"`
 }
 
 // Validate Album structure.
@@ -26,7 +26,7 @@ func (a Album) Validate() error {
 		validation.Field(&a.Name, validation.Required),
 		validation.Field(&a.Observation, validation.NilOrNotEmpty),
 		validation.Field(&a.OwnerID, validation.Required),
-		validation.Field(&a.OwnerType, validation.Required, validation.In(OwnerCheptel)),
+		validation.Field(&a.OwnerType, validation.Required, validation.In(Cheptels)),
 	)
 }
 

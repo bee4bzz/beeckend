@@ -26,7 +26,7 @@ const (
 	dbName = "cheptel.db"
 )
 
-type RepositoryIntegrationSuite struct {
+type ServiceIntegrationSuite struct {
 	suite.Suite
 	ctx            context.Context
 	db             *gorm.DB
@@ -37,7 +37,7 @@ type RepositoryIntegrationSuite struct {
 }
 
 // this function executes before the test suite begins execution
-func (suite *RepositoryIntegrationSuite) SetupSuite() {
+func (suite *ServiceIntegrationSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.db = db.NewGormForTest(sqlite.Open(dbName))
 	suite.CheptelManager = &cheptelmngtestutils.CheptelManager{}
@@ -48,21 +48,21 @@ func (suite *RepositoryIntegrationSuite) SetupSuite() {
 }
 
 // this function executes after all tests executed
-func (suite *RepositoryIntegrationSuite) TearDownSuite() {
+func (suite *ServiceIntegrationSuite) TearDownSuite() {
 	if err := os.Remove(dbName); err != nil {
 		suite.T().Fatalf("Error while deleting the database file: %s", err)
 	}
 }
 
-func (suite *RepositoryIntegrationSuite) SetupTest() {
+func (suite *ServiceIntegrationSuite) SetupTest() {
 	db.Seed(suite.T(), suite.db)
 }
 
-func (suite *RepositoryIntegrationSuite) TearDownTest() {
+func (suite *ServiceIntegrationSuite) TearDownTest() {
 	db.Clean(suite.T(), suite.db)
 }
 
-func (suite *RepositoryIntegrationSuite) TestUpdate() {
+func (suite *ServiceIntegrationSuite) TestUpdate() {
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID+1, test.ValidUser.ID).Return(nil).Once()
 	now := time.Now()
@@ -80,7 +80,7 @@ func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	}, cheptel, now)
 }
 
-func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
+func (suite *ServiceIntegrationSuite) TestUpdateFail() {
 	// cheptel should be not found
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID+1, test.ValidUser.ID).Return(nil).Once()
 
@@ -118,7 +118,7 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 	}
 }
 
-func (suite *RepositoryIntegrationSuite) TestCreate() {
+func (suite *ServiceIntegrationSuite) TestCreate() {
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID+1, test.ValidUser.ID).Return(nil).Once()
 	now := time.Now()
 
@@ -135,7 +135,7 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 	}, cheptel, now)
 }
 
-func (suite *RepositoryIntegrationSuite) TestCreateFail() {
+func (suite *ServiceIntegrationSuite) TestCreateFail() {
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(test.ErrMock).Once()
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
 
@@ -174,7 +174,7 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 	}
 }
 
-func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
+func (suite *ServiceIntegrationSuite) TestQueryByUser() {
 	cheptels, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
 		UserID: test.ValidUser.ID,
 	})
@@ -185,13 +185,13 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
 	assert.Equal(suite.T(), 2, suite.observer.Len())
 }
 
-func (suite *RepositoryIntegrationSuite) TestQueryByUserFail() {
+func (suite *ServiceIntegrationSuite) TestQueryByUserFail() {
 	cheptels, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{})
 	assert.Error(suite.T(), err)
 	assert.Empty(suite.T(), cheptels)
 }
 
-func (suite *RepositoryIntegrationSuite) TestDelete() {
+func (suite *ServiceIntegrationSuite) TestDelete() {
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
 	req := schema.Request{
 		UserID:    test.ValidUser.ID,
@@ -203,7 +203,7 @@ func (suite *RepositoryIntegrationSuite) TestDelete() {
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 
-func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
+func (suite *ServiceIntegrationSuite) TestDeleteFail() {
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(test.ErrMock).Once()
 
 	validReq := schema.Request{
@@ -232,6 +232,6 @@ func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
 	}
 }
 
-func TestRepositoryIntegrationSuite(t *testing.T) {
-	suite.Run(t, new(RepositoryIntegrationSuite))
+func TestServiceIntegrationSuite(t *testing.T) {
+	suite.Run(t, new(ServiceIntegrationSuite))
 }
