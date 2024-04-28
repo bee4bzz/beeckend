@@ -8,13 +8,21 @@ import (
 )
 
 var (
+	InValidHiveNoteAlbum = HiveNoteAlbum{
+		Album{
+			Name:        "Album",
+			OwnerID:     1,
+			Observation: utils.String(""),
+		},
+	}
+
 	EmptyHiveNote = HiveNote{
 		Observation: utils.String(""),
 	}
 	InvalidHiveNote = HiveNote{
 		NBRisers: MaxNBRisers + 1,
-		Albums: []Album{
-			InValidChetpelAlbum,
+		Albums: []HiveNoteAlbum{
+			InValidHiveNoteAlbum,
 		},
 	}
 	ValidHiveNote = HiveNote{

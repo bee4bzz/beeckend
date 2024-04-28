@@ -16,8 +16,8 @@ var (
 		Notes: []CheptelNote{
 			InvalidNote,
 		},
-		Albums: []Album{
-			InValidChetpelAlbum,
+		Albums: []CheptelAlbum{
+			InValidCheptelAlbum,
 		},
 	}
 	ValidCheptel = Cheptel{

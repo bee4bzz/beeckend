@@ -19,11 +19,11 @@ type (
 	}
 
 	Repository interface {
-		Get(ctx context.Context, album *entity.Album) error
-		QueryByOwnerIDs(ctx context.Context, ownerIDs []any, ownerType entity.AlbumType, albums *[]entity.Album) error
-		Create(ctx context.Context, album *entity.Album) error
-		Update(ctx context.Context, album *entity.Album) error
-		SoftDelete(ctx context.Context, album *entity.Album) error
+		Get(ctx context.Context, album *entity.CheptelAlbum) error
+		QueryByOwnerIDs(ctx context.Context, albums *[]entity.CheptelAlbum, ownerIDs ...uint) error
+		Create(ctx context.Context, album *entity.CheptelAlbum) error
+		Update(ctx context.Context, album *entity.CheptelAlbum) error
+		SoftDelete(ctx context.Context, album *entity.CheptelAlbum) error
 	}
 
 	Service struct {
@@ -34,7 +34,12 @@ type (
 	}
 )
 
-func NewService(repository Repository, cheptelRepository CheptelRepository, cheptelManager CheptelManager, logger *log.Logger) *Service {
+func NewService(
+	repository Repository,
+	cheptelRepository CheptelRepository,
+	cheptelManager CheptelManager,
+	logger *log.Logger,
+) *Service {
 	return &Service{
 		Repository:        repository,
 		cheptelRepository: cheptelRepository,
@@ -43,13 +48,16 @@ func NewService(repository Repository, cheptelRepository CheptelRepository, chep
 	}
 }
 
-func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]entity.Album, error) {
+func (s *Service) QueryByUser(
+	ctx context.Context,
+	req schema.QueryRequest,
+) ([]entity.CheptelAlbum, error) {
 	logger := s.logger.Named("QueryByUser")
 	logger.Debugf("User %v query its cheptel albums", req.UserID)
 
 	if err := req.Validate(); err != nil {
 		logger.Error("the request is invalid")
-		return []entity.Album{}, err
+		return []entity.CheptelAlbum{}, err
 	}
 
 	cheptels := []entity.Cheptel{}
@@ -57,94 +65,103 @@ func (s *Service) QueryByUser(ctx context.Context, req schema.QueryRequest) ([]e
 	err := s.cheptelRepository.QueryByUser(ctx, &entity.User{Model: gorm.Model{ID: req.UserID}}, &cheptels)
 	if err != nil {
 		logger.Error("An error occured when getting the cheptels from the repository")
-		return []entity.Album{}, err
+		return []entity.CheptelAlbum{}, err
 	}
 
-	cheptelIDs := []any{}
+	cheptelIDs := []uint{}
 	for _, cheptel := range cheptels {
 		cheptelIDs = append(cheptelIDs, cheptel.ID)
 	}
 
-	albums := []entity.Album{}
+	albums := []entity.CheptelAlbum{}
 
-	err = s.Repository.QueryByOwnerIDs(ctx, cheptelIDs, entity.Cheptels, &albums)
+	err = s.Repository.QueryByOwnerIDs(ctx, &albums, cheptelIDs...)
 	if err != nil {
 		logger.Error("An error occured when getting the albums from the repository")
-		return []entity.Album{}, err
+		return []entity.CheptelAlbum{}, err
 	}
 
-	logger.Debugf("albums are retrieved")
+	logger.Debugf("albums are retrieved ", albums)
 	return albums, nil
 }
 
 // Create creates an album
-func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.Album, error) {
+func (s *Service) Create(
+	ctx context.Context,
+	req schema.CreateRequest,
+) (entity.CheptelAlbum, error) {
 	if err := req.Validate(); err != nil {
-		return entity.Album{}, err
+		return entity.CheptelAlbum{}, err
 	}
 
 	err := s.cheptelManager.OnlyMember(ctx, req.CheptelID, req.UserID)
 	if err != nil {
-		return entity.Album{}, err
+		return entity.CheptelAlbum{}, err
 	}
 
-	album := entity.Album{
-		Name:        req.Name,
-		Observation: req.Observation,
-		OwnerID:     req.CheptelID,
-		OwnerType:   entity.Cheptels,
+	album := entity.CheptelAlbum{
+		Album: entity.Album{
+			Name:        req.Name,
+			Observation: req.Observation,
+			OwnerID:     req.CheptelID,
+		},
 	}
 
 	if err := s.Repository.Create(ctx, &album); err != nil {
-		return entity.Album{}, err
+		return entity.CheptelAlbum{}, err
 	}
 
 	return album, nil
 }
 
 // Update updates an album
-func (s *Service) Update(ctx context.Context, req schema.UpdateRequest) (entity.Album, error) {
+func (s *Service) Update(
+	ctx context.Context,
+	req schema.UpdateRequest,
+) (entity.CheptelAlbum, error) {
 	if err := req.Validate(); err != nil {
-		return entity.Album{}, err
+		return entity.CheptelAlbum{}, err
 	}
 
 	err := s.cheptelManager.OnlyMember(ctx, req.CheptelID, req.UserID)
 	if err != nil {
-		return entity.Album{}, err
+		return entity.CheptelAlbum{}, err
 	}
 
-	album := entity.Album{
-		Model: gorm.Model{
-			ID: req.AlbumID,
+	album := entity.CheptelAlbum{
+		Album: entity.Album{
+			Model: gorm.Model{
+				ID: req.AlbumID,
+			},
+			OwnerID: req.CheptelID,
 		},
-		OwnerID:   req.CheptelID,
-		OwnerType: entity.Cheptels,
 	}
 
 	err = s.Repository.Get(ctx, &album)
 	if err != nil {
-		return entity.Album{}, err
+		return entity.CheptelAlbum{}, err
 	}
 
 	if req.NewCheptelID != 0 {
 		err := s.cheptelManager.OnlyMember(ctx, req.NewCheptelID, req.UserID)
 		if err != nil {
-			return entity.Album{}, err
+			return entity.CheptelAlbum{}, err
 		}
 	}
 
-	album = entity.Album{
-		Model: gorm.Model{
-			ID: req.AlbumID,
+	album = entity.CheptelAlbum{
+		Album: entity.Album{
+			Model: gorm.Model{
+				ID: req.AlbumID,
+			},
+			OwnerID: req.NewCheptelID,
+			Name:    req.NewName,
 		},
-		OwnerID:   req.NewCheptelID,
-		OwnerType: entity.Cheptels,
-		Name:      req.NewName,
 	}
 
 	err = s.Repository.Update(ctx, &album)
 	if err != nil {
-		return entity.Album{}, err
+		return entity.CheptelAlbum{}, err
 	}
 	return album, err
 }
@@ -160,10 +177,11 @@ func (s *Service) Delete(ctx context.Context, req schema.Request) error {
 		return err
 	}
 
-	album := entity.Album{
-		Model:     gorm.Model{ID: req.AlbumID},
-		OwnerID:   req.CheptelID,
-		OwnerType: entity.Cheptels,
+	album := entity.CheptelAlbum{
+		Album: entity.Album{
+			Model:   gorm.Model{ID: req.AlbumID},
+			OwnerID: req.CheptelID,
+		},
 	}
 
 	return s.Repository.SoftDelete(ctx, &album)

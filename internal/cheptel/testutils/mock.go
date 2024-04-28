@@ -18,7 +18,8 @@ func (r *Repository) Get(ctx context.Context, cheptel *entity.Cheptel) error {
 
 func (r *Repository) QueryByUser(ctx context.Context, user *entity.User, cheptels *[]entity.Cheptel) error {
 	args := r.Called(*user, *cheptels)
-	return args.Error(0)
+	*cheptels = args.Get(0).([]entity.Cheptel)
+	return args.Error(1)
 }
 
 func (r *Repository) Create(ctx context.Context, cheptel *entity.Cheptel) error {

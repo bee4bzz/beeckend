@@ -1,11 +1,8 @@
 package db
 
 import (
-	"log"
-	"os"
 	"time"
 
-	"github.com/gaetanDubuc/beeckend/internal/entity"
 	l "github.com/gaetanDubuc/beeckend/internal/log"
 	"github.com/gaetanDubuc/beeckend/internal/utils"
 	zaplog "github.com/gaetanDubuc/beeckend/pkg/log"
@@ -16,6 +13,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// TODO: Should be in a log folder
 func NewLogger() l.Logger {
 	config, err := utils.LoadConfig(".")
 
@@ -48,19 +46,6 @@ func NewGorm(dial gorm.Dialector, logger logger.Interface) *gorm.DB {
 	}
 
 	return db.Session(&gorm.Session{})
-}
-
-func NewGormForTest(dial gorm.Dialector) *gorm.DB {
-	db := NewGorm(dial, logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		logger.Config{},
-	))
-
-	err := db.AutoMigrate(&entity.User{}, &entity.Cheptel{}, &entity.Hive{}, &entity.CheptelNote{}, &entity.HiveNote{}, &entity.Album{}, &entity.Photo{})
-	if err != nil {
-		panic("failed to migrate " + err.Error())
-	}
-	return db
 }
 
 func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, log l.Logger) *gorm.DB {

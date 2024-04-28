@@ -13,11 +13,11 @@ const (
 
 type Cheptel struct {
 	gorm.Model
-	Name   string        `gorm:"not null"`
-	Hives  []Hive        `gorm:"constraint:OnDelete:CASCADE;"`
-	Notes  []CheptelNote `gorm:"constraint:OnDelete:CASCADE;"`
-	Albums []Album       `gorm:"polymorphic:Owner;constraint:OnDelete:CASCADE; "`
-	Users  []User        `gorm:"many2many:user_cheptels;constraint:OnDelete:CASCADE;"`
+	Name   string         `gorm:"not null"`
+	Hives  []Hive         `gorm:"constraint:OnDelete:CASCADE;"`
+	Notes  []CheptelNote  `gorm:"constraint:OnDelete:CASCADE;"`
+	Albums []CheptelAlbum `gorm:"constraint:OnDelete:CASCADE;foreignKey:OwnerID"`
+	Users  []User         `gorm:"many2many:user_cheptels;constraint:OnDelete:CASCADE;"`
 }
 
 // Validate Cheptel structure.

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"os"
 	"testing"
@@ -49,174 +48,16 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 	}
 }
 
-func (suite *RepositoryTestSuite) TestQueryCheptelAlbumsByUser() {
-	testcases := []struct {
-		name string
-		user entity.User
-		len  int
-		fn   func()
-	}{
-		{
-			name: "should find albums",
-			user: test.ValidUser,
-			len:  1,
-			fn: func() {
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "users"
-					WHERE "users"."deleted_at" IS NULL AND "users"\."id" = \$1`,
-				).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name"}).AddRow(test.ValidUser.ID, test.ValidUser.Email, test.ValidUser.Name))
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "user_cheptels"
-					WHERE "user_cheptels"\."user_id" = \$1`,
-				).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"cheptel_id", "user_id"}).AddRow(test.ValidCheptel.ID, test.ValidUser.ID))
-				(*suite.mock).ExpectQuery(
-					`SELECT .* FROM "cheptels" WHERE "cheptels"\."id" = \$1 AND "cheptels"\."deleted_at" IS NULL`,
-				).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(test.ValidCheptel.ID, test.ValidCheptel.Name))
-				(*suite.mock).ExpectQuery(
-					`SELECT .* 
-					FROM "albums" 
-					WHERE "owner_type" = \$1 AND "albums"\."owner_id" = \$2 AND "albums"\."deleted_at" IS NULL`,
-				).WithArgs("cheptels", test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id", "owner_type", "owner_id"}).AddRow(test.ValidChetpelAlbum.ID, test.ValidChetpelAlbum.OwnerType, test.ValidChetpelAlbum.OwnerID))
-			},
-		},
-		{
-			name: "should not find album",
-			user: entity.User{Model: gorm.Model{ID: 100}},
-			len:  0,
-			fn: func() {
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "users"
-					WHERE "users"."deleted_at" IS NULL AND "users"\."id" = \$1`,
-				).WithArgs(100).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name"}))
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "user_cheptels"
-					WHERE "user_cheptels"\."user_id" = \$1`,
-				).WithArgs(100).WillReturnRows(sqlmock.NewRows([]string{"cheptel_id", "user_id"}))
-			},
-		},
-	}
+func (suite *RepositoryTestSuite) TestQueryByOwnerIDs() {
+	(*suite.mock).ExpectQuery(`SELECT \* FROM "cheptel_albums" WHERE owner_id IN \(\$1\) AND "cheptel_albums"\."deleted_at" IS NULL`).
+		WithArgs(test.ValidCheptelAlbum.OwnerID).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).
+			AddRow(test.ValidCheptelAlbum.ID))
 
-	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			tc.fn()
-			albums := []entity.Album{}
-			err := suite.Repository.QueryCheptelAlbumsByUser(suite.ctx, &tc.user, &albums)
-			assert.NoError(t, err)
-			assert.Len(t, albums, tc.len)
-		})
-	}
-}
-
-func (suite *RepositoryTestSuite) TestQueryCheptelAlbumsByUserFail() {
-	(*suite.mock).ExpectQuery(
-		`SELECT .*
-		FROM "users"
-		WHERE "users"."deleted_at" IS NULL AND "users"\."id" = \$1`,
-	).WithArgs(test.ValidUser.ID).WillReturnError(sql.ErrTxDone)
-
-	albums := []entity.Album{}
-	err := suite.Repository.QueryCheptelAlbumsByUser(suite.ctx, &test.ValidUser, &albums)
-	assert.ErrorIs(suite.T(), err, sql.ErrTxDone)
-}
-
-func (suite *RepositoryTestSuite) TestQueryHiveAlbumsByUser() {
-	testcases := []struct {
-		name string
-		user entity.User
-		len  int
-		fn   func()
-	}{
-		{
-			name: "should find albums",
-			user: test.ValidUser,
-			len:  1,
-			fn: func() {
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "users"
-					WHERE "users"."deleted_at" IS NULL AND "users"\."id" = \$1`,
-				).WithArgs(test.ValidUser.ID).WillReturnRows(
-					sqlmock.NewRows([]string{"id", "email", "name"}).AddRow(
-						test.ValidUser.ID, test.ValidUser.Email, test.ValidUser.Name))
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "user_cheptels"
-					WHERE "user_cheptels"\."user_id" = \$1`,
-				).WithArgs(test.ValidUser.ID).WillReturnRows(
-					sqlmock.NewRows([]string{"cheptel_id", "user_id"}).AddRow(
-						test.ValidCheptel.ID, test.ValidUser.ID))
-				(*suite.mock).ExpectQuery(
-					`SELECT .* FROM "cheptels" WHERE "cheptels"\."id" = \$1 AND "cheptels"\."deleted_at" IS NULL`,
-				).WithArgs(test.ValidCheptel.ID).WillReturnRows(
-					sqlmock.NewRows([]string{"id", "name"}).AddRow(
-						test.ValidCheptel.ID, test.ValidCheptel.Name))
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "hives"
-					WHERE "hives"\."cheptel_id" = \$1 AND "hives"\."deleted_at" IS NULL`,
-				).WithArgs(test.ValidCheptel.ID).WillReturnRows(
-					sqlmock.NewRows([]string{"id", "cheptel_id"}).AddRow(
-						test.ValidHive.ID, test.ValidCheptel.ID))
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "hive_notes"
-					WHERE "hive_notes"\."hive_id" = \$1 AND "hive_notes"\."deleted_at" IS NULL`,
-				).WithArgs(test.ValidHive.ID).WillReturnRows(
-					sqlmock.NewRows([]string{"id", "hive_id"}).AddRow(
-						test.ValidHiveNote.ID, test.ValidHive.ID))
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "albums"
-					WHERE "owner_type" = \$1 AND "albums"\."owner_id" = \$2 AND "albums"\."deleted_at" IS NULL`,
-				).WithArgs("hive_notes", test.ValidHiveNote.ID).WillReturnRows(
-					sqlmock.NewRows([]string{"id", "owner_type", "owner_id"}).AddRow(
-						test.ValidHiveNoteAlbum.ID, test.ValidHiveNoteAlbum.OwnerType, test.ValidHiveNoteAlbum.OwnerID))
-			},
-		},
-		{
-			name: "should not find album",
-			user: entity.User{Model: gorm.Model{ID: 100}},
-			len:  0,
-			fn: func() {
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "users"
-					WHERE "users"."deleted_at" IS NULL AND "users"\."id" = \$1`,
-				).WithArgs(100).WillReturnRows(sqlmock.NewRows([]string{"id", "email", "name"}))
-				(*suite.mock).ExpectQuery(
-					`SELECT .*
-					FROM "user_cheptels"
-					WHERE "user_cheptels"\."user_id" = \$1`,
-				).WithArgs(100).WillReturnRows(sqlmock.NewRows([]string{"cheptel_id", "user_id"}))
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			tc.fn()
-			albums := []entity.Album{}
-			err := suite.Repository.QueryHiveNoteAlbumsByUser(suite.ctx, &tc.user, &albums)
-			assert.NoError(t, err)
-			assert.Len(t, albums, tc.len)
-		})
-	}
-}
-
-func (suite *RepositoryTestSuite) TestQueryHiveAlbumsByUserFail() {
-	(*suite.mock).ExpectQuery(
-		`SELECT .*
-		FROM "users"
-		WHERE "users"."deleted_at" IS NULL AND "users"\."id" = \$1`,
-	).WithArgs(test.ValidUser.ID).WillReturnError(sql.ErrTxDone)
-
-	albums := []entity.Album{}
-	err := suite.Repository.QueryHiveNoteAlbumsByUser(suite.ctx, &test.ValidUser, &albums)
-	assert.ErrorIs(suite.T(), err, sql.ErrTxDone)
+	albums := []entity.CheptelAlbum{}
+	err := suite.Repository.QueryByOwnerIDs(suite.ctx, &albums, test.ValidCheptelAlbum.OwnerID)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), test.ValidCheptelAlbum.ID, albums[0].ID)
 }
 
 func TestRepositoryTestSuite(t *testing.T) {

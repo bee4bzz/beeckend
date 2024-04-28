@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// TODO: put this in a config folder
 // Config holds the application configuration.
 type Config struct {
 	DBSource      string `mapstructure:"DB_SOURCE"`

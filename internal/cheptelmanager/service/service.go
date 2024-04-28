@@ -13,7 +13,6 @@ import (
 
 type Repository interface {
 	Get(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
-	FilterByUserID(ctx context.Context, userID uint) (tx *gorm.DB)
 	Create(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
 	Update(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
 	SoftDelete(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error
@@ -48,7 +47,10 @@ func (s *Service) Create(ctx context.Context, req schema.Request) error {
 		},
 	}
 
-	return s.Repository.Create(ctx, &entity.User{Model: gorm.Model{ID: req.MemberID}}, &cheptel)
+	err = s.Repository.Create(ctx, &entity.User{Model: gorm.Model{ID: req.MemberID}}, &cheptel)
+
+	s.logger.Error("error while creating cheptel association ", err)
+	return err
 }
 
 // Delete deletes a cheptel association with a user

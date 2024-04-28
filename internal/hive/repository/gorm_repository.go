@@ -20,12 +20,9 @@ func NewGormRepository(db *gorm.DB) *GormRepository {
 }
 
 func (r *GormRepository) QueryByUser(ctx context.Context, user *entity.User, hives *[]entity.Hive) error {
-	err := r.DB().WithContext(ctx).Preload(entity.CheptelsKey + "." + entity.HivesKey + "." + clause.Associations).Find(user).Error
-	if err != nil {
-		return err
-	}
-	for _, cheptel := range user.Cheptels {
-		*hives = append(*hives, cheptel.Hives...)
-	}
+	err := r.DB().WithContext(ctx).Joins(
+		"INNER JOIN user_cheptels ON user_cheptels.\"user_id\" = ? AND user_cheptels.\"cheptel_id\" = hives.\"cheptel_id\"", user.ID).
+		Preload(clause.Associations).Find(hives).Error
+
 	return err
 }

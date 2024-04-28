@@ -55,7 +55,7 @@ func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
-	db.Seed(suite.T(), suite.db)
+	db.Seed(suite.T(), suite.db, &test.ValidUser)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {

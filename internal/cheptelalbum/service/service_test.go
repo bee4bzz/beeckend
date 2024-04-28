@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/gaetanDubuc/beeckend/internal/cheptelalbum/schema"
+	"github.com/gaetanDubuc/beeckend/internal/cheptelalbum/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/gaetanDubuc/beeckend/pkg/log"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap/zaptest/observer"
 	"gorm.io/gorm"
@@ -42,18 +42,411 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 }
 
 func (suite *RepositoryTestSuite) TestQueryByUserFail() {
-	suite.Repository.On("QueryByUser", entity.User{
-		Model: gorm.Model{
-			ID: test.ValidUser.ID,
+	testcases := test.ServiceTestCases[schema.QueryRequest, []entity.CheptelAlbum]{
+		{
+			Name: "fail to query cheptels by user",
+			Req: schema.QueryRequest{
+				UserID: test.ValidUser.ID,
+			},
+			WantedError: test.ErrMock,
+			RegisterMocks: func() {
+				suite.cheptelRepository.On("QueryByUser", entity.User{
+					Model: gorm.Model{
+						ID: test.ValidUser.ID,
+					},
+				}, []entity.Cheptel{}).Return([]entity.Cheptel{test.ValidCheptel}, test.ErrMock).Once()
+			},
 		},
-	}, []entity.Cheptel{}).Return(test.ErrMock).Once()
+		{
+			Name: "fail to query cheptel albums by owner ids",
+			Req: schema.QueryRequest{
+				UserID: test.ValidUser.ID,
+			},
+			WantedError: test.ErrMock,
+			RegisterMocks: func() {
+				suite.cheptelRepository.On("QueryByUser", entity.User{
+					Model: gorm.Model{
+						ID: test.ValidUser.ID,
+					},
+				}, []entity.Cheptel{}).Return([]entity.Cheptel{test.ValidCheptel}, nil).Once()
+				suite.Repository.On("QueryByOwnerIDs", &[]entity.CheptelAlbum{}, []uint{test.ValidCheptel.ID}).
+					Return([]entity.CheptelAlbum{test.ValidCheptelAlbum}, test.ErrMock).Once()
+			},
+		},
+		{
+			Name: "Invalid request",
+			Req: schema.QueryRequest{
+				UserID: 0,
+			},
+		},
+	}
 
-	cheptels, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
-		UserID: test.ValidUser.ID,
-	})
-	assert.Error(suite.T(), err)
-	assert.Empty(suite.T(), cheptels)
-	assert.Equal(suite.T(), 2, suite.observer.Len())
+	for _, tc := range testcases {
+		suite.T().Run(tc.Name, func(t *testing.T) {
+			tc.ShouldFailAndBeEmpty(suite.T(), suite.Service.QueryByUser)
+		})
+	}
+}
+
+func (suite *RepositoryTestSuite) TestQueryByUserSuccess() {
+	testcases := test.ServiceTestCases[schema.QueryRequest, []entity.CheptelAlbum]{
+		{
+			Name: "succeed",
+			Req: schema.QueryRequest{
+				UserID: test.ValidUser.ID,
+			},
+			RegisterMocks: func() {
+				suite.cheptelRepository.On("QueryByUser", entity.User{
+					Model: gorm.Model{
+						ID: test.ValidUser.ID,
+					},
+				}, []entity.Cheptel{}).Return([]entity.Cheptel{test.ValidCheptel}, nil).Once()
+				suite.Repository.On("QueryByOwnerIDs", &[]entity.CheptelAlbum{}, []uint{test.ValidCheptel.ID}).
+					Return([]entity.CheptelAlbum{test.ValidCheptelAlbum}, nil).Once()
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.Name, func(t *testing.T) {
+			albums := tc.ShouldSucceedAndNotEmpty(suite.T(), suite.Service.QueryByUser)
+			testutils.AssertAlbums(
+				suite.T(),
+				[]entity.CheptelAlbum{test.ValidCheptelAlbum},
+				albums,
+			)
+		})
+	}
+}
+
+func (suite *RepositoryTestSuite) TestCreateFail() {
+	testcases := test.ServiceTestCases[schema.CreateRequest, entity.CheptelAlbum]{
+		{
+			Name: "fail to validate request",
+			Req:  schema.CreateRequest{},
+		},
+		{
+			Name: "fail to check if user is member of cheptel",
+			Req: schema.CreateRequest{
+				UserID:    test.ValidUser.ID,
+				CheptelID: test.ValidCheptel.ID,
+				AlbumID:   test.ValidCheptel.ID,
+				Name:      "new album",
+			},
+			WantedError: test.ErrMock,
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(test.ErrMock).Once()
+			},
+		},
+		{
+			Name: "fail to create cheptel album",
+			Req: schema.CreateRequest{
+				UserID:    test.ValidUser.ID,
+				CheptelID: test.ValidCheptel.ID,
+				AlbumID:   test.ValidCheptel.ID,
+				Name:      "new album",
+			},
+			WantedError: test.ErrMock,
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(nil).Once()
+				suite.Repository.On("Create", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Name:    "new album",
+						OwnerID: test.ValidCheptel.ID,
+					},
+				}).Return(test.ValidCheptelAlbum, test.ErrMock).Once()
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.Name, func(t *testing.T) {
+			tc.ShouldFailAndBeEmpty(suite.T(), suite.Service.Create)
+		})
+	}
+}
+
+func (suite *RepositoryTestSuite) TestCreateSuccess() {
+	testcases := test.ServiceTestCases[schema.CreateRequest, entity.CheptelAlbum]{
+		{
+			Name: "CreateSuccess",
+			Req: schema.CreateRequest{
+				UserID:    test.ValidUser.ID,
+				CheptelID: test.ValidCheptel.ID,
+				AlbumID:   test.ValidCheptel.ID,
+				Name:      "new album",
+			},
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(nil).Once()
+				suite.Repository.On("Create", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Name:    "new album",
+						OwnerID: test.ValidCheptel.ID,
+					},
+				}).Return(test.ValidCheptelAlbum, nil).Once()
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.Name, func(t *testing.T) {
+			tc.ShouldSucceedAndNotEmpty(suite.T(), suite.Service.Create)
+		})
+	}
+}
+
+func (suite *RepositoryTestSuite) TestUpdateFail() {
+	testcases := test.ServiceTestCases[schema.UpdateRequest, entity.CheptelAlbum]{
+		{
+			Name: "fail to validate request",
+			Req:  schema.UpdateRequest{},
+		},
+		{
+			Name: "fail to check if user is member of cheptel",
+			Req: schema.UpdateRequest{
+				UserID:    test.ValidUser.ID,
+				CheptelID: test.ValidCheptel.ID,
+				AlbumID:   test.ValidCheptelAlbum.ID,
+			},
+			WantedError: test.ErrMock,
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(test.ErrMock).Once()
+			},
+		},
+		{
+			Name: "fail to update cheptel album",
+			Req: schema.UpdateRequest{
+				UserID:    test.ValidUser.ID,
+				CheptelID: test.ValidCheptel.ID,
+				AlbumID:   test.ValidCheptelAlbum.ID,
+			},
+			WantedError: test.ErrMock,
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(nil).Once()
+				suite.Repository.On("Get", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Model: gorm.Model{
+							ID: test.ValidCheptelAlbum.ID,
+						},
+						OwnerID: test.ValidCheptel.ID,
+					},
+				}).Return(test.ValidCheptelAlbum, test.ErrMock).Once()
+			},
+		},
+		{
+			Name: "fail to check if user is member of new cheptel",
+			Req: schema.UpdateRequest{
+				UserID:       test.ValidUser.ID,
+				CheptelID:    test.ValidCheptel.ID,
+				AlbumID:      test.ValidCheptelAlbum.ID,
+				NewCheptelID: test.ValidCheptel.ID,
+			},
+			WantedError: test.ErrMock,
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(nil).Once()
+				suite.Repository.On("Get", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Model: gorm.Model{
+							ID: test.ValidCheptelAlbum.ID,
+						},
+						OwnerID: test.ValidCheptel.ID,
+					},
+				}).Return(test.ValidCheptelAlbum, nil).Once()
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(test.ErrMock).Once()
+			},
+		},
+		{
+			Name: "fail to update cheptel album",
+			Req: schema.UpdateRequest{
+				UserID:       test.ValidUser.ID,
+				CheptelID:    test.ValidCheptel.ID,
+				AlbumID:      test.ValidCheptelAlbum.ID,
+				NewCheptelID: test.ValidCheptel.ID,
+			},
+			WantedError: test.ErrMock,
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(nil).Once()
+				suite.Repository.On("Get", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Model: gorm.Model{
+							ID: test.ValidCheptelAlbum.ID,
+						},
+						OwnerID: test.ValidCheptel.ID,
+					},
+				}).Return(test.ValidCheptelAlbum, nil).Once()
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(nil).Once()
+				suite.Repository.On("Update", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Model: gorm.Model{
+							ID: test.ValidCheptelAlbum.ID,
+						},
+						OwnerID: test.ValidCheptel.ID,
+					},
+				}).Return(test.ValidCheptelAlbum, test.ErrMock).Once()
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.Name, func(t *testing.T) {
+			tc.ShouldFailAndBeEmpty(suite.T(), suite.Service.Update)
+		})
+	}
+}
+
+func (suite *RepositoryTestSuite) TestUpdateSuccess() {
+	testcases := test.ServiceTestCases[schema.UpdateRequest, entity.CheptelAlbum]{
+		{
+			Name: "update succeed",
+			Req: schema.UpdateRequest{
+				UserID:    test.ValidUser.ID,
+				CheptelID: test.ValidCheptel.ID,
+				AlbumID:   test.ValidCheptelAlbum.ID,
+			},
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(nil).Once()
+				suite.Repository.On("Get", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Model: gorm.Model{
+							ID: test.ValidCheptelAlbum.ID,
+						},
+						OwnerID: test.ValidCheptel.ID,
+					},
+				}).Return(test.ValidCheptelAlbum, nil).Once()
+				suite.Repository.On("Update", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Model: gorm.Model{
+							ID: test.ValidCheptelAlbum.ID,
+						},
+					},
+				}).Return(test.ValidCheptelAlbum, nil).Once()
+			},
+		},
+		{
+			Name: "Update succeed with new cheptel",
+			Req: schema.UpdateRequest{
+				UserID:       test.ValidUser.ID,
+				CheptelID:    test.ValidCheptel.ID,
+				AlbumID:      test.ValidCheptelAlbum.ID,
+				NewCheptelID: test.ValidCheptel.ID,
+			},
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(nil).Once()
+				suite.Repository.On("Get", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Model: gorm.Model{
+							ID: test.ValidCheptelAlbum.ID,
+						},
+						OwnerID: test.ValidCheptel.ID,
+					},
+				}).Return(test.ValidCheptelAlbum, nil).Once()
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(nil).Once()
+				suite.Repository.On("Update", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Model: gorm.Model{
+							ID: test.ValidCheptelAlbum.ID,
+						},
+						OwnerID: test.ValidCheptel.ID,
+					},
+				}).Return(test.ValidCheptelAlbum, nil).Once()
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.Name, func(t *testing.T) {
+			tc.ShouldSucceedAndNotEmpty(suite.T(), suite.Service.Update)
+		})
+	}
+}
+
+func (suite *RepositoryTestSuite) TestDeleteFail() {
+	testcases := test.ServiceTestCases[schema.Request, error]{
+		{
+			Name: "fail to validate request",
+			Req:  schema.Request{},
+		},
+		{
+			Name: "fail to check if user is member of cheptel",
+			Req: schema.Request{
+				UserID:    test.ValidUser.ID,
+				CheptelID: test.ValidCheptel.ID,
+				AlbumID:   test.ValidCheptelAlbum.ID,
+			},
+			WantedError: test.ErrMock,
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(test.ErrMock).Once()
+			},
+		},
+		{
+			Name: "fail to delete cheptel album",
+			Req: schema.Request{
+				UserID:    test.ValidUser.ID,
+				CheptelID: test.ValidCheptel.ID,
+				AlbumID:   test.ValidCheptelAlbum.ID,
+			},
+			WantedError: test.ErrMock,
+			RegisterMocks: func() {
+				suite.CheptelManager.On(
+					"OnlyMember",
+					test.ValidCheptel.ID,
+					test.ValidUser.ID).Return(nil).Once()
+				suite.Repository.On("SoftDelete", &entity.CheptelAlbum{
+					Album: entity.Album{
+						Model: gorm.Model{
+							ID: test.ValidCheptelAlbum.ID,
+						},
+						OwnerID: test.ValidCheptel.ID,
+					},
+				}).Return(test.ErrMock).Once()
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		suite.T().Run(tc.Name, func(t *testing.T) {
+			tc.ShouldFail(suite.T(), suite.Service.Delete)
+		})
+	}
 }
 
 func TestRepositoryTestSuite(t *testing.T) {

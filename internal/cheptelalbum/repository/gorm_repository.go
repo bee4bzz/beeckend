@@ -9,18 +9,16 @@ import (
 )
 
 type GormRepository struct {
-	*repository.Repository[entity.Album]
+	*repository.Repository[entity.CheptelAlbum]
 }
 
 func NewGormRepository(db *gorm.DB) *GormRepository {
 	return &GormRepository{
-		Repository: repository.NewRepository[entity.Album](db),
+		repository.NewRepository[entity.CheptelAlbum](db),
 	}
 }
 
-func (r *GormRepository) QueryByOwnerIDs(ctx context.Context, IDs []any, albumOwner entity.AlbumOwner, albums *[]entity.Album) error {
-	err := r.DB().WithContext(ctx).Where(&entity.Album{
-		OwnerType: albumOwner,
-	}).Where("owner_id IN (?)", IDs).Find(albums).Error
+func (r *GormRepository) QueryByOwnerIDs(ctx context.Context, albums *[]entity.CheptelAlbum, OwnerIDs ...uint) error {
+	err := r.DB().WithContext(ctx).Where("owner_id IN (?)", OwnerIDs).Find(albums).Error
 	return err
 }

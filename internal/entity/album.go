@@ -8,16 +8,24 @@ import (
 type AlbumType string
 
 const (
-	Cheptels AlbumType = "cheptels"
+	Cheptels  AlbumType = "cheptel_albums"
+	HiveNotes AlbumType = "hive_note_albums"
 )
+
+type CheptelAlbum struct {
+	Album `gorm:"embedded"`
+}
+
+type HiveNoteAlbum struct {
+	Album `gorm:"embedded"`
+}
 
 type Album struct {
 	gorm.Model
-	Name        string `gorm:"index:idx_name_owner_id,unique;not null"`
+	Name        string `gorm:"index:,unique,composite:key;not null"`
 	Observation *string
-	OwnerID     uint      `gorm:"index:idx_name_owner_id,unique;not null"`
-	OwnerType   AlbumType `gorm:"not null"`
-	Photos      []Photo   `gorm:"constraint:OnDelete:CASCADE;"`
+	OwnerID     uint    `gorm:"index:,unique,composite:key;not null"`
+	Photos      []Photo `gorm:"constraint:OnDelete:CASCADE;"`
 }
 
 // Validate Album structure.
@@ -26,7 +34,6 @@ func (a Album) Validate() error {
 		validation.Field(&a.Name, validation.Required),
 		validation.Field(&a.Observation, validation.NilOrNotEmpty),
 		validation.Field(&a.OwnerID, validation.Required),
-		validation.Field(&a.OwnerType, validation.Required, validation.In(Cheptels)),
 	)
 }
 

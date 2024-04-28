@@ -9,6 +9,22 @@ import (
 )
 
 var (
+	// User has:
+	// 2 cheptels
+	//  - ValidCheptel
+	//  - ValidCheptel2
+	// 1 cheptel album
+	//  - ValidCheptelAlbum
+	// 1 cheptel note
+	//  - ValidCheptelNote
+	// 1 photo
+	//  - ValidPhoto
+	// 1 hive
+	//  - ValidHive
+	// 1 hive note
+	//  - ValidHiveNote
+	// 1 hive note album
+	//  - ValidHiveNoteAlbum
 	ValidUser = entity.User{
 		Model: gorm.Model{
 			ID: 1,
@@ -38,8 +54,8 @@ var (
 			ValidHive,
 		},
 		Notes: []entity.CheptelNote{ValidCheptelNote},
-		Albums: []entity.Album{
-			ValidChetpelAlbum,
+		Albums: []entity.CheptelAlbum{
+			ValidCheptelAlbum,
 		},
 	}
 
@@ -63,13 +79,16 @@ var (
 		Weather:   entity.CLOUDY,
 	}
 
-	ValidChetpelAlbum = entity.Album{
-		Model: gorm.Model{
-			ID: 1,
+	ValidCheptelAlbum = entity.CheptelAlbum{
+		Album: entity.Album{
+			Model: gorm.Model{
+				ID:        1,
+				CreatedAt: time.Now().UTC(),
+				UpdatedAt: time.Now().UTC(),
+			},
+			Name:    "ValidCheptelAlbum",
+			OwnerID: 1,
 		},
-		Name:      "ValidChetpelAlbum",
-		OwnerID:   1,
-		OwnerType: "cheptels",
 	}
 
 	ValidPhoto = entity.Photo{
@@ -108,12 +127,12 @@ var (
 		Operation: utils.ValidName(),
 	}
 
-	ValidHiveNoteAlbum = entity.Album{
-		Model: gorm.Model{
-			ID: 1,
-		},
-		Name:      "ValidHiveNoteAlbum",
-		OwnerID:   1,
-		OwnerType: "hive_notes",
+	ValidHiveNoteAlbum = entity.HiveNoteAlbum{
+		Album: entity.Album{
+			Model: gorm.Model{
+				ID: 1,
+			},
+			Name:    "ValidHiveNoteAlbum",
+			OwnerID: 1},
 	}
 )

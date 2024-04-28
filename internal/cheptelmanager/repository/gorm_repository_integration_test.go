@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gaetanDubuc/beeckend/internal/cheptel/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/cheptelmanager/service"
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
@@ -14,9 +13,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
-
-	hivetestutils "github.com/gaetanDubuc/beeckend/internal/hive/testutils"
 )
 
 const (
@@ -45,7 +41,9 @@ func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
-	db.Seed(suite.T(), suite.db)
+	db.Seed(suite.T(), suite.db,
+		&test.ValidUser,
+	)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
@@ -72,35 +70,6 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 			assert.NoError(t, err)
 		})
 	}
-}
-
-func (suite *RepositoryIntegrationSuite) TestFilterByUser() {
-	suite.T().Run("user 1 has multiple cheptels", func(t *testing.T) {
-		cheptels := []entity.Cheptel{
-			{Model: gorm.Model{ID: test.ValidCheptel.ID}},
-		}
-		err := suite.Repository.FilterByUserID(suite.ctx, test.ValidUser.ID).Table("cheptels AS Cheptel").Preload(clause.Associations).Find(&cheptels).Error
-		assert.NoError(suite.T(), err)
-		testutils.AssertCheptels(suite.T(), []entity.Cheptel{test.ValidCheptel, test.ValidCheptel2}, cheptels)
-	})
-
-	suite.T().Run("user 2 has one cheptel", func(t *testing.T) {
-		cheptels := []entity.Cheptel{
-			{Model: gorm.Model{ID: test.ValidCheptel2.ID}},
-		}
-		err := suite.Repository.FilterByUserID(suite.ctx, test.ValidUser2.ID).Table("cheptels AS Cheptel").Preload(clause.Associations).Find(&cheptels).Error
-		assert.NoError(suite.T(), err)
-		testutils.AssertCheptels(suite.T(), []entity.Cheptel{test.ValidCheptel}, cheptels)
-	})
-
-	suite.T().Run("user 2 has one hive", func(t *testing.T) {
-		hives := []entity.Hive{
-			{Model: gorm.Model{ID: test.ValidHive.ID}},
-		}
-		err := suite.Repository.FilterByUserID(suite.ctx, test.ValidUser2.ID).Joins("Cheptel").Preload(entity.HiveNotesKey).Find(&hives).Error
-		assert.NoError(suite.T(), err)
-		hivetestutils.AssertHives(suite.T(), []entity.Hive{test.ValidHive}, hives)
-	})
 }
 
 func TestRepositoryIntegrationTestSuite(t *testing.T) {

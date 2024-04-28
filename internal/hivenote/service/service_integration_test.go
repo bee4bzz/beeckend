@@ -45,7 +45,11 @@ func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	logger, obs := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
-	suite.Service = NewService(repository.NewGormRepository(suite.db), hiverepository.NewGormRepository(suite.db), suite.CheptelManager, suite.logger)
+	suite.Service = NewService(
+		repository.NewGormRepository(suite.db),
+		hiverepository.NewGormRepository(suite.db),
+		suite.CheptelManager,
+		suite.logger)
 }
 
 // this function executes after all tests executed
@@ -57,7 +61,11 @@ func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
-	db.Seed(suite.T(), suite.db)
+	db.Seed(suite.T(), suite.db,
+		&test.ValidUser,
+		&test.ValidCheptel,
+		&test.ValidHive,
+		&test.ValidHiveNote)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {

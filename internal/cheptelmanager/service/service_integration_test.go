@@ -49,7 +49,12 @@ func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
-	db.Seed(suite.T(), suite.db)
+	db.Clean(suite.T(), suite.db)
+	db.Seed(suite.T(), suite.db,
+		&test.ValidUser,
+		&test.ValidUser2,
+		&test.ValidCheptel,
+	)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
@@ -60,7 +65,7 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 	err := suite.Service.Create(suite.ctx, schema.Request{
 		UserID:    test.ValidUser.ID,
 		CheptelID: test.ValidCheptel.ID,
-		MemberID:  test.ValidUser.ID,
+		MemberID:  test.ValidUser2.ID,
 	})
 
 	assert.NoError(suite.T(), err)

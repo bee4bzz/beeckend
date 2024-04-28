@@ -121,19 +121,6 @@ func (suite *RepositoryTestSuite) TestGetFail() {
 	}
 }
 
-func (suite *RepositoryTestSuite) TestFilterByUser() {
-	(*suite.mock).ExpectQuery(
-		`SELECT \"hives\".\"id\",\"hives\".\"created_at\",\"hives\".\"updated_at\",\"hives\".\"deleted_at\",\"hives\".\"name\",\"hives\".\"cheptel_id\",\"Cheptel\".\"id\" AS \"Cheptel__id\",\"Cheptel\".\"created_at\" AS \"Cheptel__created_at\",\"Cheptel\".\"updated_at\" AS \"Cheptel__updated_at\",\"Cheptel\".\"deleted_at\" AS \"Cheptel__deleted_at\",\"Cheptel\".\"name\" AS \"Cheptel__name\"
-		FROM \"hives\" 
-		INNER JOIN user_cheptels ON user_cheptels.\"user_id\" = \$1 AND user_cheptels.\"cheptel_id\" = Cheptel.\"id\"
-		LEFT JOIN \"cheptels\" \"Cheptel\" ON \"hives\".\"cheptel_id\" = \"Cheptel\".\"id\" AND \(\"Cheptel\".\"deleted_at\" IS NULL AND \(\"Cheptel\".\"id\" = \$2 AND \"Cheptel\".\"name\" = \$3\)\)
-		WHERE \"hives\".\"deleted_at\" IS NULL`,
-	).WithArgs(test.ValidUser.ID, test.ValidCheptel.ID, test.ValidCheptel.Name).WillReturnRows(sqlmock.NewRows([]string{"id"}))
-
-	err := suite.Repository.FilterByUserID(suite.ctx, test.ValidUser.ID).Joins("Cheptel", suite.db.Where(test.ValidCheptel)).Find(&entity.Hive{}).Error
-	assert.NoError(suite.T(), err)
-}
-
 func (suite *RepositoryTestSuite) TestUpdate() {
 	(*suite.mock).ExpectBegin()
 	(*suite.mock).ExpectExec(

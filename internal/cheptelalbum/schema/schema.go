@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/pkg/utils"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
@@ -16,12 +17,14 @@ func (g Request) Validate() error {
 }
 
 type QueryRequest struct {
-	UserID uint `json:"-"`
+	UserID    uint             `json:"-"`
+	AlbumType entity.AlbumType `json:"-"`
 }
 
 func (q QueryRequest) Validate() error {
 	return validation.ValidateStruct(&q,
 		validation.Field(&q.UserID, validation.Required),
+		validation.Field(&q.AlbumType, validation.In(entity.Cheptels)),
 	)
 }
 

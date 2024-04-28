@@ -42,7 +42,7 @@ func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
-	db.Seed(suite.T(), suite.db)
+	db.Seed(suite.T(), suite.db, &test.ValidUser)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
@@ -101,7 +101,7 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
 		entity.User
 		len int
 	}{
-		{test.ValidUser, 1},
+		{test.ValidUser, 2},
 		{entity.User{Model: gorm.Model{ID: 100}}, 0},
 	}
 

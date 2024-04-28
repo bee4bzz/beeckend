@@ -42,7 +42,8 @@ func (suite *RepositoryIntegrationSuite) TearDownSuite() {
 }
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
-	db.Seed(suite.T(), suite.db)
+	db.Clean(suite.T(), suite.db)
+	db.Seed(suite.T(), suite.db, &test.ValidCheptel)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
@@ -50,13 +51,14 @@ func (suite *RepositoryIntegrationSuite) TearDownTest() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreate() {
-	album := entity.Album{
-		Model: gorm.Model{
-			ID: 100,
+	album := entity.CheptelAlbum{
+		Album: entity.Album{
+			Model: gorm.Model{
+				ID: 100,
+			},
+			Name:    "new album",
+			OwnerID: test.ValidCheptel.ID,
 		},
-		Name:      "new album",
-		OwnerID:   test.ValidCheptel.ID,
-		OwnerType: "cheptels",
 	}
 	albumCopy := album
 	now := time.Now()
@@ -66,8 +68,8 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreateFail() {
-	tc := []entity.Album{
-		test.ValidChetpelAlbum,
+	tc := []entity.CheptelAlbum{
+		test.ValidCheptelAlbum,
 	}
 	for _, c := range tc {
 		err := suite.Repository.Create(suite.ctx, &c)
@@ -77,42 +79,29 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 
 func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	now := time.Now()
-	album := entity.Album{Model: gorm.Model{ID: test.ValidChetpelAlbum.ID}, Name: "new name"}
+	album := entity.CheptelAlbum{
+		Album: entity.Album{Model: gorm.Model{ID: test.ValidCheptelAlbum.ID}, Name: "new name"},
+	}
 	err := suite.Repository.Update(suite.ctx, &album)
 	assert.NoError(suite.T(), err)
-	test.ValidChetpelAlbum.Name = "new name"
-	testutils.AssertAlbumUpdated(suite.T(), test.ValidChetpelAlbum, album, now)
+	test.ValidCheptelAlbum.Name = "new name"
+	testutils.AssertAlbumUpdated(suite.T(), test.ValidCheptelAlbum, album, now)
 }
 
 func (suite *RepositoryIntegrationSuite) TestGet() {
-	album := entity.Album{Model: gorm.Model{ID: test.ValidChetpelAlbum.ID}}
+	album := entity.CheptelAlbum{
+		entity.Album{Model: gorm.Model{ID: test.ValidCheptelAlbum.ID}},
+	}
 	err := suite.Repository.Get(suite.ctx, &album)
 	assert.NoError(suite.T(), err)
-	testutils.AssertAlbum(suite.T(), test.ValidChetpelAlbum, album)
+	testutils.AssertAlbum(suite.T(), test.ValidCheptelAlbum, album)
 }
 
 func (suite *RepositoryIntegrationSuite) TestSoftDelete() {
-	err := suite.Repository.SoftDelete(suite.ctx, &test.ValidChetpelAlbum)
+	err := suite.Repository.SoftDelete(suite.ctx, &test.ValidCheptelAlbum)
 	assert.NoError(suite.T(), err)
-	err = suite.Repository.Get(suite.ctx, &test.ValidChetpelAlbum)
+	err = suite.Repository.Get(suite.ctx, &test.ValidCheptelAlbum)
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
-}
-
-func (suite *RepositoryIntegrationSuite) TestQueryCheptelAlbumsByUser() {
-	testcases := []struct {
-		entity.User
-		len int
-	}{
-		{test.ValidUser, 1},
-		{entity.User{Model: gorm.Model{ID: 100}}, 0},
-	}
-
-	for _, tc := range testcases {
-		albums := []entity.Album{}
-		err := suite.Repository.QueryCheptelAlbumsByUser(suite.ctx, &tc.User, &albums)
-		assert.NoError(suite.T(), err)
-		assert.Len(suite.T(), albums, tc.len)
-	}
 }
 
 func TestRepositoryIntegrationTestSuite(t *testing.T) {

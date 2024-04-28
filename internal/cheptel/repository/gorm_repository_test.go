@@ -69,9 +69,9 @@ func (suite *RepositoryTestSuite) TestQueryByUser() {
 				).WithArgs(test.ValidUser.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(test.ValidCheptel.ID))
 				(*suite.mock).ExpectQuery(
 					`SELECT .* 
-					FROM "albums" 
-					WHERE "owner_type" = \$1 AND "albums"\."owner_id" = \$2 AND "albums"\."deleted_at" IS NULL`,
-				).WithArgs("cheptels", test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}))
+					FROM "cheptel_albums" 
+					WHERE "cheptel_albums"\."owner_id" = \$1 AND "cheptel_albums"\."deleted_at" IS NULL`,
+				).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}))
 				(*suite.mock).ExpectQuery(
 					`SELECT .* FROM "hives" WHERE "hives"\."cheptel_id" = \$1 AND "hives"\."deleted_at" IS NULL`,
 				).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}))
