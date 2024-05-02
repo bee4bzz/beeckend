@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	dbx "github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/postgres"
@@ -31,7 +32,7 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 		DriverName: "postgres"},
 	))
 	suite.db = db
-	suite.Repository = NewRepository[Mock](db)
+	suite.Repository = NewRepository[Mock](dbx.New(db))
 }
 
 // this function executes after all tests executed

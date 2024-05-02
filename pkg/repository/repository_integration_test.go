@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	dbx "github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
@@ -52,7 +53,7 @@ func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	err := db.AutoMigrate(&Mock{}, &MockChild{})
 	assert.NoError(suite.T(), err)
 	suite.db = db
-	suite.Repository = NewRepository[Mock](db)
+	suite.Repository = NewRepository[Mock](dbx.New(db))
 }
 
 // this function executes after all tests executed

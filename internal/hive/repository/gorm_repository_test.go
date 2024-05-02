@@ -8,12 +8,12 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gaetanDubuc/beeckend/internal/db"
+	dbx "github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
@@ -21,7 +21,7 @@ type RepositoryTestSuite struct {
 	suite.Suite
 	ctx        context.Context
 	mock       *sqlmock.Sqlmock
-	db         *gorm.DB
+	db         *dbx.DB
 	Repository *GormRepository
 }
 

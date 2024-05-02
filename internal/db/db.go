@@ -4,8 +4,6 @@ import (
 	"time"
 
 	l "github.com/gaetanDubuc/beeckend/internal/log"
-	"github.com/gaetanDubuc/beeckend/internal/utils"
-	zaplog "github.com/gaetanDubuc/beeckend/pkg/log"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -13,24 +11,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// TODO: Should be in a log folder
-func NewLogger() l.Logger {
-	config, err := utils.LoadConfig(".")
-
-	if err != nil {
-		panic("failed to load config")
-	}
-
-	var logger l.Logger
-	if config.AppEnv == "development" {
-		logger = zaplog.NewProduction()
-	} else {
-		logger = zaplog.NewDevelopment()
-	}
-	return logger
-}
-
-func NewGorm(dial gorm.Dialector, logger logger.Interface) *gorm.DB {
+func NewGorm(dial gorm.Dialector, logger logger.Interface) *DB {
 	GormConfig := gorm.Config{
 		TranslateError: true,
 		NowFunc: func() time.Time {
@@ -45,10 +26,10 @@ func NewGorm(dial gorm.Dialector, logger logger.Interface) *gorm.DB {
 		panic("failed to connect database")
 	}
 
-	return db.Session(&gorm.Session{})
+	return New(db.Session(&gorm.Session{}))
 }
 
-func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, log l.Logger) *gorm.DB {
+func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, log l.Logger) *DB {
 	db := NewGorm(dial, logger.Default)
 
 	// make migration programmaticaly
@@ -57,10 +38,10 @@ func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, log 
 		databaseURL)
 
 	if err != nil {
-		log.Error("failed to create a new migrate instance: ", err)
+		panic(err)
 	}
 	if err := m.Up(); err != nil {
-		log.Error("failed to migrate up: ", err)
+		log.Info("failed to migrate up: ", err)
 	}
 	return db
 }

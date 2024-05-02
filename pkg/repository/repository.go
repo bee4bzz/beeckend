@@ -6,6 +6,7 @@ package repository
 import (
 	"context"
 
+	dbx "github.com/gaetanDubuc/beeckend/internal/db"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -15,19 +16,24 @@ type Validator interface {
 }
 
 // NewRepository returns a new repository
-func NewRepository[T Validator](db *gorm.DB) *Repository[T] {
+func NewRepository[T Validator](db *dbx.DB) *Repository[T] {
 	return &Repository[T]{
 		db: db,
 	}
 }
 
 type Repository[T Validator] struct {
-	db *gorm.DB
+	db *dbx.DB
 }
 
 // DB returns the gorm database
 func (r *Repository[T]) DB() *gorm.DB {
-	return r.db
+	return r.db.DB()
+}
+
+// With returns a new gorm database with the context
+func (r *Repository[T]) With(ctx context.Context) *gorm.DB {
+	return r.db.With(ctx)
 }
 
 // Retrieve entity from the database
@@ -36,7 +42,7 @@ func (r *Repository[T]) DB() *gorm.DB {
 // The entity passed as argument will be used as a filter to retrieve the entity.
 func (r *Repository[T]) Get(ctx context.Context, entity *T) error {
 	var empty T
-	err := r.db.WithContext(ctx).Model(&empty).Preload(clause.Associations).Where(entity).First(&entity).Error
+	err := r.db.With(ctx).Model(&empty).Preload(clause.Associations).Where(entity).First(&entity).Error
 	return err
 }
 
@@ -50,7 +56,7 @@ func (r *Repository[T]) Create(ctx context.Context, entity *T) error {
 	if err != nil {
 		return err
 	}
-	err = r.db.WithContext(ctx).Model(entity).Create(entity).Error
+	err = r.db.With(ctx).Model(entity).Create(entity).Error
 	return err
 }
 
@@ -64,7 +70,7 @@ func (r *Repository[T]) Create(ctx context.Context, entity *T) error {
 // atomic.
 // The updated entity can be retrieved from the entity passed as argument.
 func (r *Repository[T]) Update(ctx context.Context, entity *T) error {
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := r.db.With(ctx).Transaction(func(tx *gorm.DB) error {
 		err := tx.Model(entity).Updates(entity).Error
 		if err != nil {
 			return err
@@ -92,7 +98,7 @@ func (r *Repository[T]) Update(ctx context.Context, entity *T) error {
 // The entity can't be retrieved through the pointer passed to the function.
 func (r *Repository[T]) SoftDelete(ctx context.Context, entity *T) error {
 	var empty T
-	return r.db.WithContext(ctx).Model(&empty).Where(entity).Delete(&empty).Error
+	return r.db.With(ctx).Model(&empty).Where(entity).Delete(&empty).Error
 }
 
 // Hard delete a entity from the database
@@ -100,5 +106,5 @@ func (r *Repository[T]) SoftDelete(ctx context.Context, entity *T) error {
 // The entity can't be retrieved from the database.
 func (r *Repository[T]) HardDelete(ctx context.Context, entity *T) error {
 	var empty T
-	return r.db.WithContext(ctx).Unscoped().Model(&empty).Where(entity).Delete(&empty).Error
+	return r.db.With(ctx).Unscoped().Model(&empty).Where(entity).Delete(&empty).Error
 }

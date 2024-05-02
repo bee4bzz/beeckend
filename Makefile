@@ -1,3 +1,5 @@
+MIGRATE := migrate -path=migrations/ -database "$(DB_URL)"
+
 .PHONY: default
 default: help
 
@@ -20,3 +22,20 @@ before-commit: test ## run all checks before commit
 	@golangci-lint run --timeout=10m
 	@echo "Using config file: ${CONFIG_FILE}"
 	@CONFIG_FILE=${CONFIG_FILE} gotestsum --junitfile report.xml --format testname ./...
+
+.PHONY: migrate-reset
+migrate-reset: ## reset database and re-run all migrations
+	@echo "Resetting database..."
+	@$(MIGRATE) drop
+	@echo "Running all database migrations..."
+	@$(MIGRATE) up
+
+.PHONY: swag docs api
+docs: swag ## generate OpenAPI/Swagger specs
+api: swag ## generate OpenAPI/Swagger specs
+swag: ## generate OpenAPI/Swagger specs
+	swag init -g cmd/rest-api-server/main.go --parseInternal --parseDependency --output api
+
+.PHONY: swag-fmt
+swag-fmt: ## format swag comments
+	swag fmt -g cmd/rest-api-server/main.go

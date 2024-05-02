@@ -35,3 +35,7 @@ postgresql.conf
 
 key
 key.pub
+
+bin/
+tmp
+.docker

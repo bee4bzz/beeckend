@@ -23,7 +23,7 @@ const (
 type RepositoryIntegrationSuite struct {
 	suite.Suite
 	ctx        context.Context
-	db         *gorm.DB
+	db         *db.DB
 	Repository *GormRepository
 }
 

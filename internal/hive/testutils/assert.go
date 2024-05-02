@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	"github.com/gaetanDubuc/beeckend/internal/utils"
+	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,10 +26,10 @@ func AssertHives(t *testing.T, expected, actual []entity.Hive) {
 
 func AssertHiveCreated(t *testing.T, expected, actual entity.Hive, now time.Time) {
 	AssertHive(t, expected, actual)
-	utils.AssertCreated(t, actual.Model, now)
+	test.AssertCreated(t, actual.Model, now)
 }
 
 func AssertHiveUpdated(t *testing.T, expected, actual entity.Hive, now time.Time) {
 	AssertHive(t, expected, actual)
-	utils.AssertUpdated(t, actual.Model, now)
+	test.AssertUpdated(t, actual.Model, now)
 }

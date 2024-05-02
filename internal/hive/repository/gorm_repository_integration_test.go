@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gaetanDubuc/beeckend/internal/db"
+	dbx "github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/hive/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/test"
@@ -24,7 +25,7 @@ const (
 type RepositoryIntegrationSuite struct {
 	suite.Suite
 	ctx        context.Context
-	db         *gorm.DB
+	db         *dbx.DB
 	Repository *GormRepository
 }
 

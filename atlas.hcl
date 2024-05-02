@@ -15,6 +15,7 @@ env "gorm" {
   dev = "docker://postgres/14"
   migration {
     dir = "file://migrations"
+    format = golang-migrate
   }
   format {
     migrate {
