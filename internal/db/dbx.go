@@ -1,0 +1,61 @@
+package db
+
+import (
+	"context"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
+
+// DB represents a DB connection that can be used to run SQL queries.
+type DB struct {
+	db *gorm.DB
+}
+
+// TransactionFunc represents a function that will start a transaction and run the given function.
+type TransactionFunc func(ctx context.Context, f func(ctx context.Context) error) error
+
+type contextKey int
+
+const (
+	txKey contextKey = iota
+)
+
+// New returns a new DB connection that wraps the given dbx.DB instance.
+func New(db *gorm.DB) *DB {
+	return &DB{db}
+}
+
+// DB returns the dbx.DB wrapped by this object.
+func (db *DB) DB() *gorm.DB {
+	return db.db
+}
+
+// With returns a Builder that can be used to build and execute SQL queries.
+// With will return the transaction if it is found in the given context.
+// Otherwise it will return a DB connection associated with the context.
+func (db *DB) With(ctx context.Context) *gorm.DB {
+	if tx, ok := ctx.Value(txKey).(*gorm.DB); ok {
+		return tx
+	}
+	return db.db.WithContext(ctx)
+}
+
+// TransactionHandler returns a middleware that starts a transaction.
+// The transaction started is kept in the context and can be accessed via With().
+func (db *DB) TransactionHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		timeoutContext, _ := context.WithTimeout(
+			c.Request.Context(),
+			time.Second,
+		)
+
+		db.db.WithContext(timeoutContext).Transaction(func(tx *gorm.DB) error {
+			ctx := context.WithValue(tx.Statement.Context, txKey, tx)
+			c.Request = c.Request.WithContext(ctx)
+			c.Next()
+			return nil
+		})
+	}
+}
