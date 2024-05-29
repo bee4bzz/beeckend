@@ -29,7 +29,7 @@ testdata/postgres
 # PID file generated to support live reload
 .pid
 
-.env*
+.env
 .vscode
 postgresql.conf
 
