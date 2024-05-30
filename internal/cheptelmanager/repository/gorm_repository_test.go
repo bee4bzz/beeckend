@@ -24,7 +24,7 @@ type RepositoryTestSuite struct {
 	suite.Suite
 	ctx        context.Context
 	mock       *sqlmock.Sqlmock
-	db         *gorm.DB
+	db         *db.DB
 	Repository service.Repository
 }
 

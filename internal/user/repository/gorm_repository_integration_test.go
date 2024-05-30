@@ -26,7 +26,7 @@ type RepositoryIntegrationTestSuite struct {
 	suite.Suite
 	ctx        context.Context
 	Repository *GormRepository
-	db         *gorm.DB
+	db         *db.DB
 }
 
 // this function executes before the test suite begins execution
@@ -58,7 +58,7 @@ func (suite *RepositoryIntegrationTestSuite) TestCreate() {
 		Email: utils.ValidEmail(),
 	})
 	assert.NoError(suite.T(), err)
-	utils.AssertCreated(suite.T(), test.ValidUser.Model, now)
+	test.AssertCreated(suite.T(), test.ValidUser.Model, now)
 }
 
 func (suite *RepositoryIntegrationTestSuite) TestUpdate() {

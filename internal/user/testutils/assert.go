@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	"github.com/gaetanDubuc/beeckend/internal/utils"
+	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,10 +22,10 @@ func AssertUser(t *testing.T, expected, actual entity.User) {
 
 func AssertUserCreated(t *testing.T, expected, actual entity.User, now time.Time) {
 	AssertUser(t, expected, actual)
-	utils.AssertCreated(t, actual.Model, now)
+	test.AssertCreated(t, actual.Model, now)
 }
 
 func AssertUserUpdated(t *testing.T, expected, actual entity.User, now time.Time) {
 	AssertUser(t, expected, actual)
-	utils.AssertUpdated(t, actual.Model, now)
+	test.AssertUpdated(t, actual.Model, now)
 }

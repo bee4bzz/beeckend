@@ -31,7 +31,7 @@ const (
 type RepositoryIntegrationSuite struct {
 	suite.Suite
 	ctx                      context.Context
-	db                       *gorm.DB
+	db                       *db.DB
 	Service                  *Service
 	CheptelManager           *service.Service
 	CheptelManagerRepository *cheptelmngrepo.GormRepository
@@ -196,7 +196,7 @@ func (suite *RepositoryIntegrationSuite) TestDelete() {
 	}
 	err := suite.Service.SoftDelete(suite.ctx, req)
 	assert.NoError(suite.T(), err)
-	err = suite.db.Model(&entity.Cheptel{}).First(&test.ValidCheptel).Error
+	err = suite.db.DB().Model(&entity.Cheptel{}).First(&test.ValidCheptel).Error
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 

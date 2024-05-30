@@ -34,7 +34,7 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	db := db.NewGormForTest(sqlite.Open(dbName))
 	suite.Service = NewService(repository.NewGormRepository(db))
-	db.Create(&test.ValidUser)
+	db.DB().Create(&test.ValidUser)
 }
 
 // this function executes after all tests executed

@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap/zaptest/observer"
 	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 const (
@@ -25,7 +24,7 @@ const (
 type RepositoryIntegrationSuite struct {
 	suite.Suite
 	ctx      context.Context
-	db       *gorm.DB
+	db       *db.DB
 	Service  *Service
 	logger   *log.Logger
 	observer *observer.ObservedLogs

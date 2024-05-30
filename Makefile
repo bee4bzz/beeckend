@@ -1,4 +1,4 @@
-MIGRATE := migrate -path=migrations/ -database "$(DB_URL)"
+MIGRATE := migrate -path=migrations/ -database "$(DATABASE_URL)"
 
 .PHONY: default
 default: help

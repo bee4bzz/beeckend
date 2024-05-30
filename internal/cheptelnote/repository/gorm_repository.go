@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 
+	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/pkg/repository"
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -13,7 +13,7 @@ type GormRepository struct {
 	*repository.Repository[entity.CheptelNote]
 }
 
-func NewGormRepository(db *gorm.DB) *GormRepository {
+func NewGormRepository(db *db.DB) *GormRepository {
 	return &GormRepository{
 		Repository: repository.NewRepository[entity.CheptelNote](db),
 	}

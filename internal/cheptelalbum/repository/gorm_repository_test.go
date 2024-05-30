@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
@@ -21,7 +20,7 @@ type RepositoryTestSuite struct {
 	suite.Suite
 	ctx        context.Context
 	mock       *sqlmock.Sqlmock
-	db         *gorm.DB
+	db         *db.DB
 	Repository *GormRepository
 }
 
