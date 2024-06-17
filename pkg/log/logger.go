@@ -1,7 +1,7 @@
 package log
 
 import (
-	"os"
+	"bytes"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -38,11 +38,12 @@ func NewWithZap(l *zap.Logger) *Logger {
 }
 
 // NewForTest returns a new logger and the corresponding observed logs which can be used in unit tests to verify log entries.
-func NewForTest() (*Logger, *observer.ObservedLogs) {
+func NewForTest() (*Logger, *observer.ObservedLogs, *bytes.Buffer) {
+	pipeTo := &bytes.Buffer{}
 	core, recorded := observer.New(zapcore.DebugLevel)
 	core = zapcore.NewTee(
 		core,
-		zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.Lock(os.Stdout), zapcore.DebugLevel),
+		zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.Lock(zapcore.AddSync(pipeTo)), zapcore.DebugLevel),
 	)
-	return NewWithZap(zap.New(core)), recorded
+	return NewWithZap(zap.New(core)), recorded, pipeTo
 }

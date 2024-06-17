@@ -34,7 +34,7 @@ type RepositoryIntegrationSuite struct {
 func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.db = db.NewGormForTest(sqlite.Open(dbName))
-	logger, obs := log.NewForTest()
+	logger, obs, _ := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
 	suite.Service = NewService(repository.NewGormRepository(suite.db), suite.logger)

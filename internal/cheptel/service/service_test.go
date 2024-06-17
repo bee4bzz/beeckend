@@ -34,7 +34,7 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.CheptelManager = &cheptelmngtestutils.CheptelManager{}
 	suite.CheptelManagerRepository = &cheptelmngtestutils.Repository{}
 	suite.Repository = &chepteltestutils.Repository{}
-	logger, obs := log.NewForTest()
+	logger, obs, _ := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
 	suite.Service = NewService(suite.Repository, suite.CheptelManager, suite.CheptelManagerRepository, logger)

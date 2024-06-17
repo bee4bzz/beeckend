@@ -27,3 +27,11 @@ func UintOr(value, value2 uint) uint {
 	}
 	return value
 }
+
+func String(value string) *string {
+	return &value
+}
+
+func Int(value int) *int {
+	return &value
+}

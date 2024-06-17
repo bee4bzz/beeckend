@@ -28,7 +28,7 @@ type RepositoryTestSuite struct {
 func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.Repository = &cheptelmngtestutils.Repository{}
-	logger, obs := log.NewForTest()
+	logger, obs, _ := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
 	suite.Service = NewService(suite.Repository, logger)

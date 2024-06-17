@@ -45,7 +45,7 @@ func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	suite.db = db.NewGormForTest(sqlite.Open(dbName))
 	suite.CheptelManagerRepository = cheptelmngrepo.NewGormRepository(suite.db)
 	suite.CheptelManager = &service.Service{Repository: suite.CheptelManagerRepository}
-	logger, obs := log.NewForTest()
+	logger, obs, _ := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
 	suite.Service = NewService(repository.NewGormRepository(suite.db), suite.CheptelManager, suite.CheptelManagerRepository, suite.logger)
