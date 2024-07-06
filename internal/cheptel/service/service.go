@@ -5,7 +5,7 @@ import (
 
 	"github.com/gaetanDubuc/beeckend/internal/cheptel/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	log "github.com/gaetanDubuc/beeckend/pkg/log"
+	log "github.com/gaetanDubuc/beeckend/internal/log"
 	"gorm.io/gorm"
 )
 
@@ -23,16 +23,17 @@ type Repository interface {
 	Create(ctx context.Context, cheptel *entity.Cheptel) error
 	Update(ctx context.Context, cheptel *entity.Cheptel) error
 	SoftDelete(ctx context.Context, cheptel *entity.Cheptel) error
+	Subscribe(ctx context.Context, user *entity.User, cheptels chan<- *[]entity.Cheptel) error
 }
 
 type Service struct {
 	Repository
 	cheptelManager           CheptelManager
 	cheptelManagerRepository CheptelManagerRepository
-	logger                   *log.Logger
+	logger                   log.Logger
 }
 
-func NewService(repository Repository, cheptelManager CheptelManager, cheptelManagerRepository CheptelManagerRepository, logger *log.Logger) *Service {
+func NewService(repository Repository, cheptelManager CheptelManager, cheptelManagerRepository CheptelManagerRepository, logger log.Logger) *Service {
 	return &Service{
 		Repository:               repository,
 		cheptelManager:           cheptelManager,

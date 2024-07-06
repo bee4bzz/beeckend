@@ -37,7 +37,11 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 	logger, obs, _ := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
-	suite.Service = NewService(suite.Repository, suite.CheptelManager, suite.CheptelManagerRepository, logger)
+	suite.Service = NewService(
+		suite.Repository,
+		suite.CheptelManager,
+		suite.CheptelManagerRepository,
+		logger)
 }
 
 func (suite *RepositoryTestSuite) TestQueryByUserFail() {
@@ -45,7 +49,7 @@ func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 		Model: gorm.Model{
 			ID: test.ValidUser.ID,
 		},
-	}, []entity.Cheptel{}).Return([]entity.Cheptel{}, test.ErrMock).Once()
+	}, []entity.Cheptel{}).Return([]entity.Cheptel{}, test.AnError).Once()
 
 	cheptels, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
 		UserID: test.ValidUser.ID,
@@ -57,7 +61,7 @@ func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 
 func (suite *RepositoryTestSuite) TestUpdateFail() {
 	suite.CheptelManager.On("OnlyMember", test.ValidCheptel.ID, test.ValidUser.ID).Return(nil).Once()
-	suite.Repository.On("Update", entity.Cheptel{Model: gorm.Model{ID: test.ValidCheptel.ID}}).Return(test.ErrMock).Once()
+	suite.Repository.On("Update", entity.Cheptel{Model: gorm.Model{ID: test.ValidCheptel.ID}}).Return(test.AnError).Once()
 
 	cheptel, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{
 		UserID:    test.ValidUser.ID,

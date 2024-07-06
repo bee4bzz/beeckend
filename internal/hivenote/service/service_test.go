@@ -46,7 +46,7 @@ func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 		Model: gorm.Model{
 			ID: test.ValidUser.ID,
 		},
-	}, []entity.HiveNote{}).Return(test.ErrMock).Once()
+	}, []entity.HiveNote{}).Return(test.AnError).Once()
 
 	hives, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
 		UserID: test.ValidUser.ID,

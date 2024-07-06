@@ -7,19 +7,22 @@ import (
 )
 
 var (
-	CheptelsKey = "Cheptels"
+	CheptelsKey     = "Cheptels"
+	UserCheptelsKey = "UserCheptels"
 )
 
 type User struct {
 	gorm.Model
-	Name     string    `gorm:"not null"`
-	Email    string    `gorm:"unique;not null"`
-	Cheptels []Cheptel `gorm:"many2many:user_cheptels;constraint:OnDelete:CASCADE;"`
+	Confirmed bool      `gorm:"default:false;not null"`
+	Name      string    `gorm:"not null"`
+	Email     string    `gorm:"unique;not null"`
+	Cheptels  []Cheptel `gorm:"many2many:user_cheptels;constraint:OnDelete:CASCADE;"`
 }
 
 // Validate User structure.
 func (u User) Validate() error {
 	return validation.ValidateStruct(&u,
+		validation.Field(&u.Confirmed, validation.Required),
 		validation.Field(&u.Email, validation.Required, is.Email),
 		validation.Field(&u.Name, validation.Required),
 		validation.Field(&u.Cheptels),

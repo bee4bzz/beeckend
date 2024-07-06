@@ -48,13 +48,13 @@ func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 			Req: schema.QueryRequest{
 				UserID: test.ValidUser.ID,
 			},
-			WantedError: test.ErrMock,
+			WantedError: test.AnError,
 			RegisterMocks: func() {
 				suite.cheptelRepository.On("QueryByUser", entity.User{
 					Model: gorm.Model{
 						ID: test.ValidUser.ID,
 					},
-				}, []entity.Cheptel{}).Return([]entity.Cheptel{test.ValidCheptel}, test.ErrMock).Once()
+				}, []entity.Cheptel{}).Return([]entity.Cheptel{test.ValidCheptel}, test.AnError).Once()
 			},
 		},
 		{
@@ -62,7 +62,7 @@ func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 			Req: schema.QueryRequest{
 				UserID: test.ValidUser.ID,
 			},
-			WantedError: test.ErrMock,
+			WantedError: test.AnError,
 			RegisterMocks: func() {
 				suite.cheptelRepository.On("QueryByUser", entity.User{
 					Model: gorm.Model{
@@ -70,7 +70,7 @@ func (suite *RepositoryTestSuite) TestQueryByUserFail() {
 					},
 				}, []entity.Cheptel{}).Return([]entity.Cheptel{test.ValidCheptel}, nil).Once()
 				suite.Repository.On("QueryByOwnerIDs", &[]entity.CheptelAlbum{}, []uint{test.ValidCheptel.ID}).
-					Return([]entity.CheptelAlbum{test.ValidCheptelAlbum}, test.ErrMock).Once()
+					Return([]entity.CheptelAlbum{test.ValidCheptelAlbum}, test.AnError).Once()
 			},
 		},
 		{
@@ -133,12 +133,12 @@ func (suite *RepositoryTestSuite) TestCreateFail() {
 				AlbumID:   test.ValidCheptel.ID,
 				Name:      "new album",
 			},
-			WantedError: test.ErrMock,
+			WantedError: test.AnError,
 			RegisterMocks: func() {
 				suite.CheptelManager.On(
 					"OnlyMember",
 					test.ValidCheptel.ID,
-					test.ValidUser.ID).Return(test.ErrMock).Once()
+					test.ValidUser.ID).Return(test.AnError).Once()
 			},
 		},
 		{
@@ -149,7 +149,7 @@ func (suite *RepositoryTestSuite) TestCreateFail() {
 				AlbumID:   test.ValidCheptel.ID,
 				Name:      "new album",
 			},
-			WantedError: test.ErrMock,
+			WantedError: test.AnError,
 			RegisterMocks: func() {
 				suite.CheptelManager.On(
 					"OnlyMember",
@@ -160,7 +160,7 @@ func (suite *RepositoryTestSuite) TestCreateFail() {
 						Name:    "new album",
 						OwnerID: test.ValidCheptel.ID,
 					},
-				}).Return(test.ValidCheptelAlbum, test.ErrMock).Once()
+				}).Return(test.ValidCheptelAlbum, test.AnError).Once()
 			},
 		},
 	}
@@ -217,12 +217,12 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 				CheptelID: test.ValidCheptel.ID,
 				AlbumID:   test.ValidCheptelAlbum.ID,
 			},
-			WantedError: test.ErrMock,
+			WantedError: test.AnError,
 			RegisterMocks: func() {
 				suite.CheptelManager.On(
 					"OnlyMember",
 					test.ValidCheptel.ID,
-					test.ValidUser.ID).Return(test.ErrMock).Once()
+					test.ValidUser.ID).Return(test.AnError).Once()
 			},
 		},
 		{
@@ -232,7 +232,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 				CheptelID: test.ValidCheptel.ID,
 				AlbumID:   test.ValidCheptelAlbum.ID,
 			},
-			WantedError: test.ErrMock,
+			WantedError: test.AnError,
 			RegisterMocks: func() {
 				suite.CheptelManager.On(
 					"OnlyMember",
@@ -245,7 +245,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 						},
 						OwnerID: test.ValidCheptel.ID,
 					},
-				}).Return(test.ValidCheptelAlbum, test.ErrMock).Once()
+				}).Return(test.ValidCheptelAlbum, test.AnError).Once()
 			},
 		},
 		{
@@ -256,7 +256,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 				AlbumID:      test.ValidCheptelAlbum.ID,
 				NewCheptelID: test.ValidCheptel.ID,
 			},
-			WantedError: test.ErrMock,
+			WantedError: test.AnError,
 			RegisterMocks: func() {
 				suite.CheptelManager.On(
 					"OnlyMember",
@@ -273,7 +273,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 				suite.CheptelManager.On(
 					"OnlyMember",
 					test.ValidCheptel.ID,
-					test.ValidUser.ID).Return(test.ErrMock).Once()
+					test.ValidUser.ID).Return(test.AnError).Once()
 			},
 		},
 		{
@@ -284,7 +284,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 				AlbumID:      test.ValidCheptelAlbum.ID,
 				NewCheptelID: test.ValidCheptel.ID,
 			},
-			WantedError: test.ErrMock,
+			WantedError: test.AnError,
 			RegisterMocks: func() {
 				suite.CheptelManager.On(
 					"OnlyMember",
@@ -309,7 +309,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 						},
 						OwnerID: test.ValidCheptel.ID,
 					},
-				}).Return(test.ValidCheptelAlbum, test.ErrMock).Once()
+				}).Return(test.ValidCheptelAlbum, test.AnError).Once()
 			},
 		},
 	}
@@ -409,12 +409,12 @@ func (suite *RepositoryTestSuite) TestDeleteFail() {
 				CheptelID: test.ValidCheptel.ID,
 				AlbumID:   test.ValidCheptelAlbum.ID,
 			},
-			WantedError: test.ErrMock,
+			WantedError: test.AnError,
 			RegisterMocks: func() {
 				suite.CheptelManager.On(
 					"OnlyMember",
 					test.ValidCheptel.ID,
-					test.ValidUser.ID).Return(test.ErrMock).Once()
+					test.ValidUser.ID).Return(test.AnError).Once()
 			},
 		},
 		{
@@ -424,7 +424,7 @@ func (suite *RepositoryTestSuite) TestDeleteFail() {
 				CheptelID: test.ValidCheptel.ID,
 				AlbumID:   test.ValidCheptelAlbum.ID,
 			},
-			WantedError: test.ErrMock,
+			WantedError: test.AnError,
 			RegisterMocks: func() {
 				suite.CheptelManager.On(
 					"OnlyMember",
@@ -437,7 +437,7 @@ func (suite *RepositoryTestSuite) TestDeleteFail() {
 						},
 						OwnerID: test.ValidCheptel.ID,
 					},
-				}).Return(test.ErrMock).Once()
+				}).Return(test.AnError).Once()
 			},
 		},
 	}

@@ -97,12 +97,12 @@ func (suite *RepositoryTestSuite) Test_Return_Error_When_The_Repo_Fails_To_Query
 		FROM "hives" INNER JOIN user_cheptels 
 		ON user_cheptels\."user_id" = \$1 AND user_cheptels\."cheptel_id" = hives\."cheptel_id" 
 		WHERE "hives"\."deleted_at" IS NULL`).WithArgs(uint(1)).WillReturnError(
-		test.ErrMock,
+		test.AnError,
 	)
 
 	hives := []entity.Hive{}
 	err := suite.Repository.QueryByUser(suite.ctx, &test.ValidUser, &hives)
-	assert.ErrorIs(suite.T(), err, test.ErrMock)
+	assert.ErrorIs(suite.T(), err, test.AnError)
 }
 
 func (suite *RepositoryTestSuite) TestSoftDelete() {

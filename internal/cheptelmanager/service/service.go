@@ -7,7 +7,7 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/cheptelmanager/errors"
 	"github.com/gaetanDubuc/beeckend/internal/cheptelmanager/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	log "github.com/gaetanDubuc/beeckend/pkg/log"
+	log "github.com/gaetanDubuc/beeckend/internal/log"
 	"gorm.io/gorm"
 )
 
@@ -20,10 +20,10 @@ type Repository interface {
 
 type Service struct {
 	Repository
-	logger *log.Logger
+	logger log.Logger
 }
 
-func NewService(repository Repository, logger *log.Logger) *Service {
+func NewService(repository Repository, logger log.Logger) *Service {
 	return &Service{
 		Repository: repository,
 		logger:     logger.Named("cheptel manager"),

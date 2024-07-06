@@ -1,7 +1,11 @@
 package log
 
+import "context"
+
 // Logger is a logger that supports log levels, context and structured logging.
 type Logger interface {
+	Named(name string) Logger
+	With(ctx context.Context, args ...interface{}) Logger
 	// Debug uses fmt.Sprint to construct and log a message at DEBUG level
 	Debug(args ...interface{})
 	// Info uses fmt.Sprint to construct and log a message at INFO level

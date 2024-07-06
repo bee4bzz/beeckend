@@ -1,8 +1,8 @@
 package service
 
 import (
+	"bytes"
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -12,11 +12,14 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
+	"github.com/gaetanDubuc/beeckend/internal/utils"
 	"github.com/gaetanDubuc/beeckend/pkg/log"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap/zaptest/observer"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/gaetanDubuc/beeckend/internal/cheptelmanager/errors"
@@ -28,7 +31,7 @@ const (
 	dbName = "cheptel.db"
 )
 
-type RepositoryIntegrationSuite struct {
+type ServiceIntegrationSuite struct {
 	suite.Suite
 	ctx                      context.Context
 	db                       *db.DB
@@ -36,37 +39,55 @@ type RepositoryIntegrationSuite struct {
 	CheptelManager           *service.Service
 	CheptelManagerRepository *cheptelmngrepo.GormRepository
 	logger                   *log.Logger
+	buffer                   *bytes.Buffer
 	observer                 *observer.ObservedLogs
 }
 
 // this function executes before the test suite begins execution
-func (suite *RepositoryIntegrationSuite) SetupSuite() {
-	suite.ctx = context.Background()
-	suite.db = db.NewGormForTest(sqlite.Open(dbName))
-	suite.CheptelManagerRepository = cheptelmngrepo.NewGormRepository(suite.db)
-	suite.CheptelManager = &service.Service{Repository: suite.CheptelManagerRepository}
+func (suite *ServiceIntegrationSuite) SetupSuite() {
 	logger, obs, _ := log.NewForTest()
 	suite.logger = logger
 	suite.observer = obs
-	suite.Service = NewService(repository.NewGormRepository(suite.db), suite.CheptelManager, suite.CheptelManagerRepository, suite.logger)
-}
 
-// this function executes after all tests executed
-func (suite *RepositoryIntegrationSuite) TearDownSuite() {
-	if err := os.Remove(dbName); err != nil {
-		suite.T().Fatalf("Error while deleting the database file: %s", err)
+	suite.ctx = context.Background()
+
+	config, err := utils.LoadConfig("../../../")
+	if err != nil {
+		logger.Fatal("cannot load config:", err)
+		panic(err)
 	}
+	suite.db = db.NewGormWithMigrate(
+		postgres.Open(config.DBSource),
+		"file://../../../migrations",
+		config.DatabaseURL,
+		logger)
+
+	suite.CheptelManagerRepository = cheptelmngrepo.NewGormRepository(suite.db)
+	suite.CheptelManager = &service.Service{Repository: suite.CheptelManagerRepository}
+
+	pool, err := pgxpool.New(suite.ctx, config.DatabaseURL)
+	if err != nil {
+		panic(err)
+	}
+
+	suite.Service = NewService(
+		repository.NewGormRepository(suite.db, pool, suite.logger),
+		suite.CheptelManager,
+		suite.CheptelManagerRepository,
+		suite.logger)
 }
 
-func (suite *RepositoryIntegrationSuite) SetupTest() {
+func (suite *ServiceIntegrationSuite) SetupTest() {
+	db.Clean(suite.T(), suite.db)
 	db.Seed(suite.T(), suite.db, &test.ValidUser)
 }
 
-func (suite *RepositoryIntegrationSuite) TearDownTest() {
-	db.Clean(suite.T(), suite.db)
+func (suite *ServiceIntegrationSuite) TearDownTest() {
+	suite.T().Log(suite.buffer)
+	suite.observer.TakeAll()
 }
 
-func (suite *RepositoryIntegrationSuite) TestUpdate() {
+func (suite *ServiceIntegrationSuite) TestUpdate() {
 	now := time.Now()
 
 	cheptel, err := suite.Service.Update(suite.ctx, schema.UpdateRequest{
@@ -88,7 +109,7 @@ func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	}, cheptel, now)
 }
 
-func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
+func (suite *ServiceIntegrationSuite) TestUpdateFail() {
 	validUpdateReq := schema.UpdateRequest{
 		UserID:    100,
 		CheptelID: test.ValidCheptel.ID,
@@ -120,7 +141,7 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 	}
 }
 
-func (suite *RepositoryIntegrationSuite) TestCreate() {
+func (suite *ServiceIntegrationSuite) TestCreate() {
 	now := time.Now()
 
 	cheptel, err := suite.Service.Create(suite.ctx, schema.CreateRequest{
@@ -136,7 +157,7 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 	}, cheptel, now)
 }
 
-func (suite *RepositoryIntegrationSuite) TestCreateFail() {
+func (suite *ServiceIntegrationSuite) TestCreateFail() {
 	validCreateReq := schema.CreateRequest{
 		UserID:    100,
 		CheptelID: 100,
@@ -154,7 +175,8 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 		req  schema.CreateRequest
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to create the cheptel", req: validCreateReq, err: gorm.ErrForeignKeyViolated},
+		{name: "An unknown user of the current cheptel should not be able to create the cheptel",
+			req: validCreateReq, err: gorm.ErrForeignKeyViolated},
 		{name: "Create an cheptel without a name should return an error", req: invalidCreateReq},
 		{name: "the request should be invalid", req: schema.CreateRequest{}},
 	}
@@ -172,7 +194,7 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 	}
 }
 
-func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
+func (suite *ServiceIntegrationSuite) TestQueryByUser() {
 	cheptels, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{
 		UserID: test.ValidUser.ID,
 	})
@@ -183,13 +205,13 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
 	assert.Equal(suite.T(), 2, suite.observer.Len())
 }
 
-func (suite *RepositoryIntegrationSuite) TestQueryByUserFail() {
+func (suite *ServiceIntegrationSuite) TestQueryByUserFail() {
 	cheptels, err := suite.Service.QueryByUser(suite.ctx, schema.QueryRequest{})
 	assert.Error(suite.T(), err)
 	assert.Empty(suite.T(), cheptels)
 }
 
-func (suite *RepositoryIntegrationSuite) TestDelete() {
+func (suite *ServiceIntegrationSuite) TestDelete() {
 	req := schema.Request{
 		UserID:    test.ValidUser.ID,
 		CheptelID: test.ValidCheptel.ID,
@@ -200,7 +222,7 @@ func (suite *RepositoryIntegrationSuite) TestDelete() {
 	assert.ErrorIs(suite.T(), err, gorm.ErrRecordNotFound)
 }
 
-func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
+func (suite *ServiceIntegrationSuite) TestDeleteFail() {
 	validReq := schema.Request{
 		UserID:    100,
 		CheptelID: test.ValidCheptel.ID,
@@ -227,6 +249,6 @@ func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
 	}
 }
 
-func TestRepositoryIntegrationSuite(t *testing.T) {
-	suite.Run(t, new(RepositoryIntegrationSuite))
+func TestServiceIntegrationSuite(t *testing.T) {
+	suite.Run(t, new(ServiceIntegrationSuite))
 }

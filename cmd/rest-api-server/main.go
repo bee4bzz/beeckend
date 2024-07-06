@@ -5,6 +5,10 @@ import (
 	"net/http"
 
 	cheptelapi "github.com/gaetanDubuc/beeckend/internal/cheptel/api"
+	cheptelrepository "github.com/gaetanDubuc/beeckend/internal/cheptel/repository"
+	cheptelservice "github.com/gaetanDubuc/beeckend/internal/cheptel/service"
+	cheptelmngrepository "github.com/gaetanDubuc/beeckend/internal/cheptelmanager/repository"
+	cheptelmngservice "github.com/gaetanDubuc/beeckend/internal/cheptelmanager/service"
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/log"
 	"github.com/gaetanDubuc/beeckend/internal/router"
@@ -23,6 +27,7 @@ func main() {
 	config, err := utils.LoadConfig(".")
 	if err != nil {
 		logger.Fatal("cannot load config:", err)
+		panic(err)
 	}
 
 	ctx := context.Background()
@@ -31,41 +36,6 @@ func main() {
 		logger.Error("Unable to connect to database:", err)
 		panic(err)
 	}
-	/*
-		conn, err := pool.Acquire(ctx)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error acquiring connection:", err)
-			panic(err)
-		}
-		defer conn.Release()
-
-		_, err = conn.Exec(ctx, "LISTEN chat")
-		if err != nil {
-			logger.Fatal("cannot listen to chat:", err)
-		}
-
-		go func() {
-
-			for {
-				notification, err := conn.Conn().WaitForNotification(context.Background())
-				if err != nil {
-					fmt.Fprintln(os.Stderr, "Error waiting for notification:", err)
-					os.Exit(1)
-				}
-
-				fmt.Println("PID:", notification.PID, "Channel:", notification.Channel, "Payload:", notification.Payload)
-			}
-		}()
-
-		conn, err = pool.Acquire(ctx)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error acquiring connection:", err)
-			os.Exit(1)
-		}
-		_, err = conn.Conn().Exec(ctx, "NOTIFY chat, 'hello';")
-		if err != nil {
-			logger.Fatal("cannot listen to chat:", err)
-		}*/
 
 	db := db.NewGormWithMigrate(
 		postgres.Open(config.DBSource),
@@ -91,5 +61,22 @@ func main() {
 func RegisterHandlers(router *gin.RouterGroup, db *db.DB, pool *pgxpool.Pool, logger log.Logger) {
 	var upgrader = &websocket.Upgrader{} // use default options
 
-	cheptelapi.RegisterHandlers(router, upgrader, logger)
+	// Repositories
+	cheptelRepository := cheptelrepository.NewGormRepository(db, pool, logger)
+	cheptelManagerRepository := cheptelmngrepository.NewGormRepository(db)
+
+	// Services
+	cheptelManager := cheptelmngservice.NewService(
+		cheptelManagerRepository,
+		logger,
+	)
+	cheptelService := cheptelservice.NewService(
+		cheptelRepository,
+		cheptelManager,
+		cheptelManagerRepository,
+		logger,
+	)
+
+	// APIs
+	cheptelapi.RegisterHandlers(router, cheptelService, upgrader, logger)
 }

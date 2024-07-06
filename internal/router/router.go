@@ -20,7 +20,7 @@ func New(db *dbx.DB) (*gin.Engine, *gin.RouterGroup) {
 	engine := gin.New()
 	engine.Use(gin.Logger(), gin.CustomRecovery(func(c *gin.Context, err interface{}) {
 		errorResponse := buildErrorResponse(err)
-		c.JSON(errorResponse.StatusCode(), errorResponse)
+		c.AbortWithError(errorResponse.StatusCode(), errorResponse)
 	}))
 
 	docs.SwaggerInfo.BasePath = "/api/v1"
@@ -30,6 +30,7 @@ func New(db *dbx.DB) (*gin.Engine, *gin.RouterGroup) {
 
 	v1.Use(
 		middleware.JSONContentType,
+		middleware.SecurityHeaders,
 		db.TransactionHandler(),
 	)
 	return r, v1

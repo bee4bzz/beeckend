@@ -45,9 +45,9 @@ func (suite *RepositoryTestSuite) TestOnlyMemberFail() {
 		"Get",
 		entity.User{Model: gorm.Model{ID: test.ValidUser.ID}},
 		entity.Cheptel{Model: gorm.Model{ID: test.ValidCheptel.ID}},
-	).Return(test.ErrMock).Once()
+	).Return(test.AnError).Once()
 	err := suite.Service.OnlyMember(suite.ctx, test.ValidCheptel.ID, test.ValidUser.ID)
-	assert.ErrorIs(suite.T(), err, test.ErrMock)
+	assert.ErrorIs(suite.T(), err, test.AnError)
 }
 
 func TestRepositoryTestSuite(t *testing.T) {

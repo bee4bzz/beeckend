@@ -1,8 +1,8 @@
 package repository
 
 import (
+	"bytes"
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -10,9 +10,14 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
+	"github.com/gaetanDubuc/beeckend/internal/utils"
+	"github.com/gaetanDubuc/beeckend/pkg/log"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -24,29 +29,45 @@ type RepositoryIntegrationSuite struct {
 	suite.Suite
 	ctx        context.Context
 	db         *db.DB
-	Repository *GormRepository
+	Repository *GormRepository[*pgxpool.Conn, *pgx.Conn]
+	buffer     *bytes.Buffer
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	suite.ctx = context.Background()
-	suite.db = db.NewGormForTest(sqlite.Open(dbName))
-	suite.Repository = NewGormRepository(suite.db)
-}
+	logger, _, b := log.NewForTest()
+	suite.buffer = b
 
-// this function executes after all tests executed
-func (suite *RepositoryIntegrationSuite) TearDownSuite() {
-	if err := os.Remove(dbName); err != nil {
-		suite.T().Errorf("Error while deleting the database file: %s", err)
+	config, err := utils.LoadConfig("../../../")
+	if err != nil {
+		logger.Fatal("cannot load config:", err)
+		panic(err)
 	}
+	suite.db = db.NewGormWithMigrate(
+		postgres.Open(config.DBSource),
+		"file://../../../migrations",
+		config.DatabaseURL,
+		logger)
+
+	pool, err := pgxpool.New(suite.ctx, config.DatabaseURL)
+	if err != nil {
+		logger.Error("Unable to connect to database:", err)
+		panic(err)
+	}
+
+	suite.Repository = NewGormRepository(suite.db, pool, logger)
 }
 
 func (suite *RepositoryIntegrationSuite) SetupTest() {
+	db.Clean(suite.T(), suite.db)
 	db.Seed(suite.T(), suite.db, &test.ValidUser)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
-	db.Clean(suite.T(), suite.db)
+	suite.T().Log(suite.buffer)
+
+	suite.buffer.Reset()
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreate() {
@@ -111,6 +132,26 @@ func (suite *RepositoryIntegrationSuite) TestQueryByUser() {
 		assert.NoError(suite.T(), err)
 		assert.Len(suite.T(), cheptels, tc.len)
 	}
+}
+
+func (suite *RepositoryIntegrationSuite) Test_A_User_Can_Subscribe_To_Cheptels_Modifications() {
+	cheptels := make(chan *[]entity.Cheptel)
+
+	ctx, cancel := context.WithCancel(suite.ctx)
+	err := suite.Repository.Subscribe(ctx, &test.ValidUser, cheptels)
+	assert.NoError(suite.T(), err)
+	testutils.AssertCheptels(suite.T(), test.ValidUser.Cheptels, *<-cheptels)
+
+	err = suite.Repository.SoftDelete(ctx, &entity.Cheptel{Model: gorm.Model{ID: test.ValidUser.Cheptels[0].ID}})
+	assert.NoError(suite.T(), err)
+
+	testutils.AssertCheptels(suite.T(), test.ValidUser.Cheptels[1:], *<-cheptels)
+
+	cancel()
+
+	v, ok := <-cheptels
+	assert.Nil(suite.T(), v)
+	assert.False(suite.T(), ok)
 }
 
 func TestRepositoryIntegrationTestSuite(t *testing.T) {

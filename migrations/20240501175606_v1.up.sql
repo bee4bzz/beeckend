@@ -142,3 +142,10 @@ CREATE TABLE "public"."user_cheptels" (
   CONSTRAINT "fk_user_cheptels_cheptel" FOREIGN KEY ("cheptel_id") REFERENCES "public"."cheptels" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "fk_user_cheptels_user" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
+
+CREATE OR REPLACE FUNCTION notify_changes() RETURNS TRIGGER AS $$
+BEGIN
+    EXECUTE 'NOTIFY ' || quote_ident(TG_ARGV[0]) || ', ''1''';
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;

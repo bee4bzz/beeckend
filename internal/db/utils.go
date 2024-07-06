@@ -42,10 +42,7 @@ func NewGormForTest(dial gorm.Dialector) *DB {
 // TODO: implment these functions in test package
 func Seed(t *testing.T, db *DB, values ...any) {
 	t.Helper()
-	err := db.DB().Exec("PRAGMA foreign_keys = ON", nil).Error
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	for _, ptr := range values {
 		err := db.DB().Clauses(clause.OnConflict{DoNothing: true}).Create(ptr).Error
 		if err != nil {

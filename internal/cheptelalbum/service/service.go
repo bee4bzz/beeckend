@@ -5,7 +5,7 @@ import (
 
 	"github.com/gaetanDubuc/beeckend/internal/cheptelalbum/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	log "github.com/gaetanDubuc/beeckend/pkg/log"
+	log "github.com/gaetanDubuc/beeckend/internal/log"
 	"gorm.io/gorm"
 )
 
@@ -30,7 +30,7 @@ type (
 		Repository
 		cheptelRepository CheptelRepository
 		cheptelManager    CheptelManager
-		logger            *log.Logger
+		logger            log.Logger
 	}
 )
 
@@ -38,7 +38,7 @@ func NewService(
 	repository Repository,
 	cheptelRepository CheptelRepository,
 	cheptelManager CheptelManager,
-	logger *log.Logger,
+	logger log.Logger,
 ) *Service {
 	return &Service{
 		Repository:        repository,

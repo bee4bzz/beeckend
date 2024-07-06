@@ -5,7 +5,7 @@ import (
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/hivenote/schema"
-	log "github.com/gaetanDubuc/beeckend/pkg/log"
+	log "github.com/gaetanDubuc/beeckend/internal/log"
 	"gorm.io/gorm"
 )
 
@@ -29,10 +29,10 @@ type Service struct {
 	Repository
 	hiveRepository HiveRepository
 	cheptelManager CheptelManager
-	logger         *log.Logger
+	logger         log.Logger
 }
 
-func NewService(repository Repository, hiveRepository HiveRepository, cheptelManager CheptelManager, logger *log.Logger) *Service {
+func NewService(repository Repository, hiveRepository HiveRepository, cheptelManager CheptelManager, logger log.Logger) *Service {
 	return &Service{
 		Repository:     repository,
 		hiveRepository: hiveRepository,

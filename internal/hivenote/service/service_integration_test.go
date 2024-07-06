@@ -133,9 +133,9 @@ func (suite *RepositoryIntegrationSuite) TestUpdateFail() {
 		{
 			name: "An unknown user of the current cheptel should not be able to update the hive note",
 			req:  validUpdateReq,
-			err:  test.ErrMock,
+			err:  test.AnError,
 			fn: func() {
-				suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
+				suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.AnError).Once()
 			},
 		},
 		{name: "the request should be invalid", req: schema.UpdateRequest{}},
@@ -207,8 +207,8 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 		fn   func()
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to update the hive note", req: validCreateReq, err: test.ErrMock, fn: func() {
-			suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
+		{name: "An unknown user of the current cheptel should not be able to update the hive note", req: validCreateReq, err: test.AnError, fn: func() {
+			suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.AnError).Once()
 		}},
 		{name: "Create a hive note without a name should return an error", req: invalidCreateReq, fn: func() {
 			suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
@@ -276,7 +276,7 @@ func (suite *RepositoryIntegrationSuite) TestDelete() {
 }
 
 func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
-	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.ErrMock).Once()
+	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(test.AnError).Once()
 	suite.CheptelManager.On("OnlyMember", test.ValidHive.CheptelID, test.ValidUser.ID).Return(nil).Once()
 
 	validReq := schema.Request{
@@ -291,7 +291,7 @@ func (suite *RepositoryIntegrationSuite) TestDeleteFail() {
 		req  schema.Request
 		err  error
 	}{
-		{name: "An unknown user of the current cheptel should not be able to delete the hive note", req: validReq, err: test.ErrMock},
+		{name: "An unknown user of the current cheptel should not be able to delete the hive note", req: validReq, err: test.AnError},
 		{name: "hive should not be found", req: validReq.CopyWith(schema.Request{HiveID: 100}), err: gorm.ErrRecordNotFound},
 		{name: "the request should be invalid", req: schema.Request{}},
 	}

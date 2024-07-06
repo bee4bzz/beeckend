@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"regexp"
 	"testing"
 
@@ -14,24 +15,31 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/log"
 	"github.com/gaetanDubuc/beeckend/pkg/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
 
+type Dialer interface {
+	Dial(urlStr string, requestHeader http.Header) (*websocket.Conn, *http.Response, error)
+}
+
 // APITestCase represents the data needed to describe an API test case.
 type APITestCase[T any] struct {
-	Client                     *http.Client
-	Router                     *gin.Engine
-	Method, BaseURL, URL, Body *string
-	Header                     *http.Header
-	WantStatus                 *int
-	WantResponse               *string
-	Logger                     log.Logger
+	Client       *http.Client
+	Router       *gin.Engine
+	URL          *url.URL
+	Method, Body *string
+	Header       *http.Header
+	WantStatus   *int
+	WantResponse *string
+	WSDialer     Dialer
+	WSChannel    chan T
+	Logger       log.Logger
 }
 
 func (tc APITestCase[T]) CopyWith(new APITestCase[T]) APITestCase[T] {
 	tc.Router = utils.Or(new.Router, tc.Router)
 	tc.Method = utils.Or(new.Method, tc.Method)
-	tc.BaseURL = utils.Or(new.BaseURL, tc.BaseURL)
 	tc.URL = utils.Or(new.URL, tc.URL)
 	tc.Body = utils.Or(new.Body, tc.Body)
 	tc.Header = utils.Or(new.Header, tc.Header)
@@ -55,13 +63,13 @@ func (tc APITestCase[T]) WithMethod(method string) APITestCase[T] {
 	return tc
 }
 
-func (tc APITestCase[T]) WithBaseURL(baseURL string) APITestCase[T] {
-	tc.BaseURL = &baseURL
+func (tc APITestCase[T]) WithURL(URL url.URL) APITestCase[T] {
+	tc.URL = &URL
 	return tc
 }
 
-func (tc APITestCase[T]) WithURL(url string) APITestCase[T] {
-	tc.URL = &url
+func (tc APITestCase[T]) WithHost(host string) APITestCase[T] {
+	tc.URL.Host = host
 	return tc
 }
 
@@ -129,16 +137,29 @@ func (tc APITestCase[T]) CheckEndpoint(t *testing.T) T {
 	}, func(res *http.Response) {})
 }
 
-func (tc APITestCase[T]) checkEndpoint(
-	t *testing.T,
-	Do func(*http.Request) (*http.Response, error),
-	postProc func(*http.Response),
-) T {
-	if tc.BaseURL == nil {
-		tc.BaseURL = utils.String("")
-	}
-	URL := *tc.BaseURL + *tc.URL
+func (tc APITestCase[T]) Dial(t *testing.T) *websocket.Conn {
+	if tc.URL.Scheme == "ws" && tc.WSDialer != nil {
+		req := tc.prepareRequest(t)
+		tc.Logger.Debugf("testing the api with a websocket dialer")
 
+		tc.Logger.Infof("connecting to %s", tc.URL.String())
+
+		c, response, err := tc.WSDialer.Dial(
+			req.URL.String(),
+			nil)
+		if err != nil {
+			if tc.WantResponse != nil {
+				assert.Regexp(t, *tc.WantResponse, err.Error(), "response mismatch")
+			}
+		}
+		httpStatusEqual(t, *tc.WantStatus, response.StatusCode, "status mismatch")
+		return c
+	}
+	t.Fatalf("websocket dialer is required")
+	return nil
+}
+
+func (tc APITestCase[T]) prepareRequest(t *testing.T) *http.Request {
 	body := ""
 	if tc.Body != nil {
 		body = *tc.Body
@@ -154,6 +175,7 @@ func (tc APITestCase[T]) checkEndpoint(
 
 	tc.Logger.Debugf("Request sent with method %s", *tc.Method)
 
+	URL := tc.URL.String()
 	if tc.URL != nil {
 		tc.Logger.Debugf("Request sent with URL %s", URL)
 	}
@@ -163,7 +185,7 @@ func (tc APITestCase[T]) checkEndpoint(
 		if t != nil {
 			t.Fatalf("failed to create request: %v", err)
 		}
-		panic(fmt.Sprintf("failed to create request: %v", err))
+		t.Fatalf("failed to create request: %v", err)
 	}
 
 	req.Close = true
@@ -179,6 +201,15 @@ func (tc APITestCase[T]) checkEndpoint(
 	if req.Header.Get("Content-Type") == "" {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	return req
+}
+
+func (tc APITestCase[T]) checkEndpoint(
+	t *testing.T,
+	Do func(*http.Request) (*http.Response, error),
+	postProc func(*http.Response),
+) T {
+	req := tc.prepareRequest(t)
 
 	res, err := Do(req)
 	if err != nil {
@@ -208,7 +239,7 @@ func (tc APITestCase[T]) checkEndpoint(
 	}
 
 	if t.Failed() {
-		t.Logf("\n\tEndpoint: %s", *tc.URL)
+		t.Logf("\n\tEndpoint: %s", tc.URL)
 	}
 
 	postProc(res)
@@ -240,11 +271,8 @@ func (tc APITestCase[T]) call() (T, error) {
 	if tc.URL == nil {
 		return output, fmt.Errorf("url is required")
 	}
-	if tc.BaseURL == nil {
-		tc.BaseURL = utils.String("")
-	}
 
-	URL := *tc.BaseURL + *tc.URL
+	URL := tc.URL.String()
 
 	tc.Logger.Debugf("Request sent with URL %s", URL)
 
