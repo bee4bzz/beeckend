@@ -13,9 +13,9 @@ type Context interface {
 	Header(key string, value string)
 }
 
-type JWTTokenHandler[T Context] func(c T, token any) error
+type JWTTokenHandler[T Context] func(c T, token *jwt.Token) error
 
-func DefaultJWTTokenHandler[C Context](c C, token any) error {
+func DefaultJWTTokenHandler[C Context](c C, token *jwt.Token) error {
 	c.Set("JWT", token)
 	return nil
 }
@@ -31,7 +31,7 @@ type Params[C Context] struct {
 	// which stores the token in the context with the key "JWT".
 	TokenHandler JWTTokenHandler[C]
 	// a function to get a dynamic VerificationKey
-	keyFunc func(t *jwt.Token) (interface{}, error)
+	Keyfunc func(t *jwt.Token) (interface{}, error)
 }
 
 func JWT[C Context](claims jwt.Claims, p Params[C]) func(C) error {
@@ -57,7 +57,7 @@ func JWT[C Context](claims jwt.Claims, p Params[C]) func(C) error {
 			token, err := parser.ParseWithClaims(
 				header[7:],
 				claims,
-				p.keyFunc,
+				p.Keyfunc,
 			)
 			if err == nil && token.Valid {
 				err = p.TokenHandler(c, token)
@@ -69,9 +69,7 @@ func JWT[C Context](claims jwt.Claims, p Params[C]) func(C) error {
 		}
 
 		c.Header("WWW-Authenticate", `Bearer realm="`+p.Realm+`"`)
-		if message == "" {
-			message = "Something went wrong during jwt parsing"
-		}
+
 		return errors.New(message)
 	}
 }

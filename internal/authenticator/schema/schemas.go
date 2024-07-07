@@ -3,11 +3,10 @@ package schema
 import (
 	"time"
 
-	"4d63.com/optional"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	optionalvalidation "github.com/gaetanDubuc/beeckend/pkg/optional-validation"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const (
@@ -53,51 +52,34 @@ type PublicKeyResponse struct {
 	PublicKey string `json:"key"`
 }
 
-func MakeUserClaim(user entity.User, expiration int) *JWTClaims {
-	return &JWTClaims{
-		ID:        user.ID,
-		Confirmed: optional.Of(user.Confirmed),
-		Exp:       time.Now().UTC().Add(time.Duration(expiration) * time.Second).Unix(),
+func MakeUserClaim(user entity.User, expiration int) *Claims {
+	return &Claims{
+		ID:  user.ID,
+		Exp: time.Now().UTC().Add(time.Duration(expiration) * time.Second).Unix(),
 	}
 }
 
-type JWTClaims struct {
-	ID            uint                    `json:"ID"`
-	Administrator optional.Optional[bool] `json:"administrator"`
-	Confirmed     optional.Optional[bool] `json:"confirmed"`
-	Exp           int64                   `json:"exp"`
+type Claims struct {
+	jwt.RegisteredClaims
+	ID  uint  `json:"ID"`
+	Exp int64 `json:"exp"`
 }
 
-func (c *JWTClaims) Valid() error {
+func (c *Claims) Valid() error {
 	return validation.ValidateStruct(c,
 		validation.Field(&c.ID, validation.Required),
-		validation.Field(&c.Administrator, optionalvalidation.BoolIsPresent),
-		validation.Field(&c.Confirmed, optionalvalidation.BoolIsPresent),
 		validation.Field(&c.Exp, validation.Required, validation.Min(time.Now().Unix()).Exclusive().Error("Token is expired")),
 	)
 }
 
-func (c *JWTClaims) GetID() uint {
-	return c.ID
+type ExpiredClaims struct {
+	jwt.RegisteredClaims
+	Claims
 }
 
-func (c *JWTClaims) GetAdministrator() optional.Optional[bool] {
-	return c.Administrator
-}
-
-func (c *JWTClaims) GetConfirmed() optional.Optional[bool] {
-	return c.Confirmed
-}
-
-type ExpiredJWTClaims struct {
-	JWTClaims
-}
-
-func (c *ExpiredJWTClaims) Valid() error {
+func (c *ExpiredClaims) Valid() error {
 	return validation.ValidateStruct(c,
-		validation.Field(&c.ID, validation.Required, validation.Required),
-		validation.Field(&c.Administrator, optionalvalidation.BoolIsPresent),
-		validation.Field(&c.Confirmed, optionalvalidation.BoolIsPresent),
+		validation.Field(&c.Claims.ID, validation.Required),
 		validation.Field(&c.Exp, validation.Required, validation.Max(
 			time.Now().Unix()).Error("Token is not expired")),
 	)

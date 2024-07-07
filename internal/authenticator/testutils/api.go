@@ -3,13 +3,14 @@ package testutils
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
+	"github.com/gaetanDubuc/beeckend/internal/authenticator/path"
+	"github.com/gaetanDubuc/beeckend/internal/authenticator/schema"
+	"github.com/gaetanDubuc/beeckend/internal/log"
+	"github.com/gaetanDubuc/beeckend/internal/test"
+	"github.com/gaetanDubuc/beeckend/internal/utils"
 	"github.com/golang-jwt/jwt"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/auth/path"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/auth/schema"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/test/v2"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/utils"
-	"gitlab.com/fogo-dev/infrastructure/web-api/pkg/log"
 )
 
 func BearerAuthHeader(header *http.Header, token string) {
@@ -18,8 +19,10 @@ func BearerAuthHeader(header *http.Header, token string) {
 
 var (
 	LoginRootTest = test.APITestCase[schema.Session]{
-		Method:       utils.String("POST"),
-		URL:          utils.String(path.LoginPath),
+		Method: utils.String("POST"),
+		URL: &url.URL{
+			Scheme: "http",
+		},
 		WantStatus:   utils.Int(http.StatusOK),
 		WantResponse: utils.String(".*token.*refresh_token.*"),
 	}
@@ -70,7 +73,7 @@ func (c *Client) Login() (schema.Session, error) {
 			Username: c.Email,
 			Password: c.Password,
 		}).
-		WithBaseURL(c.BaseURL).
+		WithURL(c.URL).
 		WithLogger(c.Logger).
 		WithClient(&c.Client).Call()
 

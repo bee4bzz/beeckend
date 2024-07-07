@@ -7,17 +7,16 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/authenticator/path"
 	"github.com/gaetanDubuc/beeckend/internal/authenticator/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	"github.com/gaetanDubuc/beeckend/internal/pkg/log"
+	"github.com/gaetanDubuc/beeckend/internal/log"
 	refreshtokenschema "github.com/gaetanDubuc/beeckend/internal/refresh-token/schema"
 	"github.com/gin-gonic/gin"
-	routing "github.com/go-ozzo/ozzo-routing"
 )
 
 type (
 	Middleware interface {
-		AuthHandler(c *gin.Context) error
-		OnlyUnauthenticated(c *gin.Context) error
-		OnlyExpiredSession(c *gin.Context) error
+		AuthHandler(c *gin.Context)
+		OnlyUnauthenticated(c *gin.Context)
+		OnlyExpiredSession(c *gin.Context)
 		CurrentAuthenticatedUser(ctx context.Context) entity.User
 	}
 
@@ -33,7 +32,7 @@ type (
 // RegisterHandlers registers handlers for different HTTP requests.
 // A public key is required to verify the JWT token.
 func RegisterHandlers(
-	rg *routing.RouteGroup,
+	rg *gin.RouterGroup,
 	service Service,
 	authMid Middleware,
 	publicKeyPEM string,
@@ -48,12 +47,12 @@ func RegisterHandlers(
 
 	rgAuth := rg.Group("")
 
-	rgAuth.Post(path.RefreshSessionPath, authMid.OnlyExpiredSession, res.RefreshSession)
+	rgAuth.POST(path.RefreshSessionPath, authMid.OnlyExpiredSession, res.RefreshSession)
 
-	rgAuth.Post(path.LoginPath, authMid.OnlyUnauthenticated, res.login)
-	rgAuth.Get(path.PublicKeyPath, res.publicKey)
+	rgAuth.POST(path.LoginPath, authMid.OnlyUnauthenticated, res.login)
+	rgAuth.GET(path.PublicKeyPath, res.publicKey)
 
-	rgAuth.Delete(path.LogoutPath, authMid.AuthHandler, res.logout)
+	rgAuth.DELETE(path.LogoutPath, authMid.AuthHandler, res.logout)
 }
 
 type resource struct {
@@ -153,7 +152,7 @@ func (r resource) RefreshSession(c *gin.Context) {
 //	@Security	JWT Token
 //
 //nolint:gofmt
-func (r resource) logout(c *routing.Context) {
+func (r resource) logout(c *gin.Context) {
 	logger := r.logger.With(c.Request.Context(), "method", "logout")
 
 	ctx := c.Request.Context()
@@ -168,8 +167,6 @@ func (r resource) logout(c *routing.Context) {
 		c.AbortWithError(http.StatusForbidden, err)
 		return
 	}
-
-	c.SecureJSON(http.StatusOK)
 }
 
 // publicKey handles public key request.
