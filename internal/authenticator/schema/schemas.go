@@ -7,6 +7,7 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 const (
@@ -42,8 +43,8 @@ func (r LogoutRequest) Validate() error {
 // Session is the response after a successful login
 // It contains the authentication JWT and the refresh JWT.
 type Session struct {
-	Token        string `json:"token"`
-	RefreshToken string `json:"refresh_token"`
+	JWT        string `json:"jwt"`
+	RefreshJWT string `json:"refresh_jwt"`
 }
 
 // PublicKeyResponse.
@@ -53,34 +54,26 @@ type PublicKeyResponse struct {
 }
 
 func MakeUserClaim(user entity.User, expiration int) *Claims {
+	now := time.Now().UTC()
 	return &Claims{
-		ID:  user.ID,
-		Exp: time.Now().UTC().Add(time.Duration(expiration) * time.Second).Unix(),
+		UserID: user.ID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.NewString(),
+			Issuer:    "beeckend",
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(expiration) * time.Second)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+		},
 	}
 }
 
 type Claims struct {
 	jwt.RegisteredClaims
-	ID  uint  `json:"ID"`
-	Exp int64 `json:"exp"`
+	UserID uint `json:"user_ID"`
 }
 
-func (c *Claims) Valid() error {
+func (c *Claims) Validate() error {
 	return validation.ValidateStruct(c,
-		validation.Field(&c.ID, validation.Required),
-		validation.Field(&c.Exp, validation.Required, validation.Min(time.Now().Unix()).Exclusive().Error("Token is expired")),
-	)
-}
-
-type ExpiredClaims struct {
-	jwt.RegisteredClaims
-	Claims
-}
-
-func (c *ExpiredClaims) Valid() error {
-	return validation.ValidateStruct(c,
-		validation.Field(&c.Claims.ID, validation.Required),
-		validation.Field(&c.Exp, validation.Required, validation.Max(
-			time.Now().Unix()).Error("Token is not expired")),
+		validation.Field(&c.UserID, validation.Required),
 	)
 }

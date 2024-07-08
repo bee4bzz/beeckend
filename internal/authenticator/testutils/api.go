@@ -1,7 +1,6 @@
 package testutils
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -13,15 +12,11 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func BearerAuthHeader(header *http.Header, token string) {
-	header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-}
-
 var (
 	LoginRootTest = test.APITestCase[schema.Session]{
 		Method: utils.String("POST"),
 		URL: &url.URL{
-			Scheme: "http",
+			Path: path.LoginPath,
 		},
 		WantStatus:   utils.Int(http.StatusOK),
 		WantResponse: utils.String(".*token.*refresh_token.*"),
@@ -29,20 +24,20 @@ var (
 
 	RefreshSessionRootTest = test.APITestCase[schema.Session]{
 		Method:       utils.String("POST"),
-		URL:          utils.String(path.RefreshSessionPath),
+		URL:          &url.URL{Path: path.RefreshSessionPath},
 		WantStatus:   utils.Int(http.StatusOK),
 		WantResponse: utils.String(".*token.*refresh_token.*"),
 	}
 
 	PublicKeyRootTest = test.APITestCase[schema.PublicKeyResponse]{
 		Method:     utils.String("GET"),
-		URL:        utils.String(path.PublicKeyPath),
+		URL:        &url.URL{Path: path.PublicKeyPath},
 		WantStatus: utils.Int(http.StatusOK),
 	}
 
 	LogoutRootTest = test.APITestCase[any]{
 		Method:     utils.String("DELETE"),
-		URL:        utils.String(path.LogoutPath),
+		URL:        &url.URL{Path: path.LogoutPath},
 		WantStatus: utils.Int(http.StatusOK),
 	}
 )
@@ -61,7 +56,8 @@ func ExtractAuthenticationJWT[V any](tokenString string, verificationKey V, sign
 
 type Client struct {
 	http.Client
-	BaseURL         string
+	scheme          string
+	host            string
 	Email, Password string
 	Header          *http.Header
 	Logger          log.Logger
@@ -73,7 +69,8 @@ func (c *Client) Login() (schema.Session, error) {
 			Username: c.Email,
 			Password: c.Password,
 		}).
-		WithURL(c.URL).
+		WithScheme(c.scheme).
+		WithHost(c.host).
 		WithLogger(c.Logger).
 		WithClient(&c.Client).Call()
 
@@ -81,7 +78,7 @@ func (c *Client) Login() (schema.Session, error) {
 		return schema.Session{}, err
 	}
 
-	BearerAuthHeader(c.Header, response.Token)
+	utils.BearerAuthHeader(c.Header, response.JWT)
 
 	return response, nil
 }

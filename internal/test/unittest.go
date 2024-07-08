@@ -2,8 +2,11 @@ package test
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -57,4 +60,11 @@ func (tc ServiceTestCase[T, E]) ShouldSucceedAndNotEmpty(t *testing.T, Method fu
 	assert.NotEmpty(t, result)
 
 	return result
+}
+
+func NewContext() (*gin.Context, *httptest.ResponseRecorder) {
+	res := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(res)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+	return ctx, res
 }

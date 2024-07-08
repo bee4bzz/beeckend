@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
+	"os"
 
 	cheptelapi "github.com/gaetanDubuc/beeckend/internal/cheptel/api"
 	cheptelrepository "github.com/gaetanDubuc/beeckend/internal/cheptel/repository"
@@ -43,7 +44,7 @@ func main() {
 		config.DatabaseURL,
 		logger)
 
-	router, v1 := router.New(db)
+	router, v1 := router.New(os.Stdout, db)
 	RegisterHandlers(v1, db, pool, logger)
 	server := utils.NewServer(config.ServerAddress, router)
 

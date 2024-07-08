@@ -1,4 +1,4 @@
-package auth
+package api
 
 import (
 	"context"
@@ -16,7 +16,6 @@ type (
 	Middleware interface {
 		AuthHandler(c *gin.Context)
 		OnlyUnauthenticated(c *gin.Context)
-		OnlyExpiredSession(c *gin.Context)
 		CurrentAuthenticatedUser(ctx context.Context) entity.User
 	}
 
@@ -47,7 +46,7 @@ func RegisterHandlers(
 
 	rgAuth := rg.Group("")
 
-	rgAuth.POST(path.RefreshSessionPath, authMid.OnlyExpiredSession, res.RefreshSession)
+	rgAuth.POST(path.RefreshSessionPath, res.RefreshSession)
 
 	rgAuth.POST(path.LoginPath, authMid.OnlyUnauthenticated, res.login)
 	rgAuth.GET(path.PublicKeyPath, res.publicKey)
@@ -80,9 +79,10 @@ func (r resource) login(c *gin.Context) {
 	logger := r.logger.With(c.Request.Context(), "method", "login")
 
 	var req schema.LoginRequest
-	err := c.Bind(&req)
+	err := c.ShouldBind(&req)
 	if err != nil {
 		logger.Error(err)
+		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
@@ -94,7 +94,7 @@ func (r resource) login(c *gin.Context) {
 
 	if err != nil {
 		logger.Error(err)
-		c.AbortWithError(http.StatusUnauthorized, err)
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 	c.SecureJSON(http.StatusOK, session)
@@ -118,9 +118,10 @@ func (r resource) RefreshSession(c *gin.Context) {
 	logger := r.logger.With(c.Request.Context(), "method", "refresh-session")
 
 	var req refreshtokenschema.RefreshRequest
-	err := c.Bind(&req)
+	err := c.ShouldBind(&req)
 	if err != nil {
 		logger.Error(err)
+		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
@@ -132,7 +133,7 @@ func (r resource) RefreshSession(c *gin.Context) {
 	session, err := r.service.RefreshSession(ctx, req)
 	if err != nil {
 		logger.Error(err)
-		c.AbortWithError(http.StatusUnauthorized, err)
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
@@ -164,7 +165,7 @@ func (r resource) logout(c *gin.Context) {
 
 	if err != nil {
 		logger.Error(err)
-		c.AbortWithError(http.StatusForbidden, err)
+		c.AbortWithStatus(http.StatusForbidden)
 		return
 	}
 }

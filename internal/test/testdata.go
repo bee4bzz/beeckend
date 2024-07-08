@@ -5,10 +5,14 @@ import (
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/utils"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 var (
+	Password            = "password12345"
+	HashedPassword, err = bcrypt.GenerateFromPassword([]byte(Password), bcrypt.DefaultCost)
+
 	// User has:
 	// 2 cheptels
 	//  - ValidCheptel
@@ -29,18 +33,20 @@ var (
 		Model: gorm.Model{
 			ID: 1,
 		},
-		Name:     "ValidUser",
-		Email:    utils.ValidEmail(),
-		Cheptels: []entity.Cheptel{ValidCheptel, ValidCheptel2},
+		Name:           "ValidUser",
+		Email:          utils.ValidEmail(),
+		HashedPassword: string(HashedPassword),
+		Cheptels:       []entity.Cheptel{ValidCheptel, ValidCheptel2},
 	}
 
 	ValidUser2 = entity.User{
 		Model: gorm.Model{
 			ID: 2,
 		},
-		Name:     "ValidUser2",
-		Email:    utils.ValidEmail(),
-		Cheptels: []entity.Cheptel{ValidCheptel},
+		Name:           "ValidUser2",
+		Email:          utils.ValidEmail(),
+		HashedPassword: string(HashedPassword),
+		Cheptels:       []entity.Cheptel{ValidCheptel},
 	}
 
 	ValidUsers = []entity.User{ValidUser, ValidUser2}

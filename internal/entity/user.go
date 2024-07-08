@@ -13,15 +13,17 @@ var (
 
 type User struct {
 	gorm.Model
-	Name     string    `gorm:"not null"`
-	Email    string    `gorm:"unique;not null"`
-	Cheptels []Cheptel `gorm:"many2many:user_cheptels;constraint:OnDelete:CASCADE;"`
+	Name           string    `gorm:"not null"`
+	Email          string    `gorm:"unique;not null"`
+	HashedPassword string    `json:"-" gorm:"not null"`
+	Cheptels       []Cheptel `gorm:"many2many:user_cheptels;constraint:OnDelete:CASCADE;"`
 }
 
 // Validate User structure.
 func (u User) Validate() error {
 	return validation.ValidateStruct(&u,
 		validation.Field(&u.Email, validation.Required, is.Email),
+		validation.Field(&u.HashedPassword, validation.Required),
 		validation.Field(&u.Name, validation.Required),
 		validation.Field(&u.Cheptels),
 	)

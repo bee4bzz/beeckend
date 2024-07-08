@@ -61,6 +61,7 @@ func (suite *APITestSuite) SetupTest() {
 		DriverName: "postgres"},
 	), l.Default)
 	suite.router, _ = router.New(
+		suite.buffer,
 		suite.db,
 	)
 
@@ -141,7 +142,7 @@ func (suite *APITestSuite) Test_Return_An_Error_When_The_Request_Can_Not_Be_Upgr
 	})
 }
 
-func (suite *APITestSuite) Test_Return_An_Error_When_The_Service_Can_Not_Subscribe_To_Modifications() {
+func (suite *APITestSuite) Test_Panic_When_The_Service_Can_Not_Subscribe_To_Modifications() {
 	suite.upgrader.On("Upgrade", mock.Anything, mock.Anything, mock.Anything).
 		Return(suite.conn, nil).Once()
 
@@ -159,7 +160,7 @@ func (suite *APITestSuite) Test_Return_An_Error_When_The_Service_Can_Not_Subscri
 	})
 }
 
-func (suite *APITestSuite) Test_Return_An_Error_When_The_Resource_Can_Not_Write_Message_To_The_Websocket() {
+func (suite *APITestSuite) Test_Panic_When_The_Resource_Can_Not_Write_Message_To_The_Websocket() {
 	suite.upgrader.On("Upgrade", mock.Anything, mock.Anything, mock.Anything).
 		Return(suite.conn, nil).Once()
 

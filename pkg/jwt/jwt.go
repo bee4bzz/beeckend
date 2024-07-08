@@ -3,6 +3,7 @@ package jwt
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -45,6 +46,11 @@ func JWT[C Context](claims jwt.Claims, p Params[C]) func(C) error {
 		p.TokenHandler = DefaultJWTTokenHandler
 	}
 	parser := jwt.NewParser(
+		jwt.WithTimeFunc(
+			func() time.Time {
+				return time.Now().UTC()
+			},
+		),
 		jwt.WithExpirationRequired(),
 		jwt.WithStrictDecoding(),
 		jwt.WithIssuedAt(),
@@ -52,7 +58,7 @@ func JWT[C Context](claims jwt.Claims, p Params[C]) func(C) error {
 	)
 	return func(c C) error {
 		header := c.GetHeader("Authorization")
-		message := ""
+		message := "Authorization header is missing or invalid"
 		if strings.HasPrefix(header, "Bearer ") {
 			token, err := parser.ParseWithClaims(
 				header[7:],

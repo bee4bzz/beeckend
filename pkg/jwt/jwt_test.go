@@ -60,8 +60,53 @@ func TestJWT(t *testing.T) {
 		c, _ := gin.CreateTestContext(res)
 		c.Request = req
 		err = h(c)
-		assert.Error(t, err)
+		assert.ErrorContains(t, err, jwt.ErrSignatureInvalid.Error())
 	}
+
+	{
+		tok := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-1 * time.Hour)),
+			ID:        "100",
+		})
+		tokenString, err := tok.SignedString([]byte(secret))
+		assert.Nil(t, err)
+
+		h := JWT(&jwt.RegisteredClaims{}, Params[*gin.Context]{
+			Keyfunc: func(t *jwt.Token) (interface{}, error) {
+				return []byte(secret), nil
+			},
+		})
+		res := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/users/", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenString)
+		c, _ := gin.CreateTestContext(res)
+		c.Request = req
+		err = h(c)
+		assert.ErrorContains(t, err, jwt.ErrTokenExpired.Error())
+	}
+
+	{
+		tok := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+			NotBefore: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
+		})
+		tokenString, err := tok.SignedString([]byte(secret))
+		assert.Nil(t, err)
+
+		h := JWT(&jwt.RegisteredClaims{}, Params[*gin.Context]{
+			Keyfunc: func(t *jwt.Token) (interface{}, error) {
+				return []byte(secret), nil
+			},
+		})
+
+		res := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/users/", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenString)
+		c, _ := gin.CreateTestContext(res)
+		c.Request = req
+		err = h(c)
+		assert.ErrorContains(t, err, jwt.ErrTokenNotValidYet.Error())
+	}
+
 }
 
 func TestDefaultJWTTokenHandler(t *testing.T) {

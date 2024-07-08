@@ -2,25 +2,23 @@ package auth
 
 import (
 	"context"
+	"errors"
 
-	"4d63.com/optional"
-	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/auth"
-	refreshtokenschema "gitlab.com/fogo-dev/infrastructure/web-api/internal/auth/refresh-token/schema"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/auth/schema"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/entity"
-	"gitlab.com/fogo-dev/infrastructure/web-api/pkg/log"
+	"github.com/gaetanDubuc/beeckend/internal/authenticator/schema"
+	"github.com/gaetanDubuc/beeckend/internal/entity"
+	"github.com/gaetanDubuc/beeckend/internal/log"
+	refreshtokenschema "github.com/gaetanDubuc/beeckend/internal/refresh-token/schema"
+	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
+)
+
+var (
+	ErrWrongPassword = errors.New("wrong password")
 )
 
 type (
-	JWTGenerator interface {
-		GenerateJWT(ctx context.Context, claim jwt.Claims) (string, error)
-	}
-
 	UserRepository interface {
-		Get(ctx context.Context, UUID uuid.UUID) (entity.User, error)
-		GetFromUsername(ctx context.Context, username string) (entity.User, error)
+		Get(ctx context.Context, user *entity.User) error
 	}
 
 	Hasher interface {
@@ -36,9 +34,10 @@ type (
 	Service struct {
 		userRepository      UserRepository
 		refreshTokenService RefreshTokenService
-		jwtGenerator        JWTGenerator
 		hasher              Hasher
 		tokenExpiration     int
+		SigningMethod       jwt.SigningMethod
+		Keyfunc             func(*jwt.Token) (interface{}, error)
 		logger              log.Logger
 	}
 )
@@ -47,17 +46,19 @@ type (
 func NewService(
 	userRepository UserRepository,
 	refreshTokenService RefreshTokenService,
-	jwtGenerator JWTGenerator,
 	hasher Hasher,
 	tokenExpiration int,
+	signingMethod jwt.SigningMethod,
+	keyfunc func(*jwt.Token) (interface{}, error),
 	logger log.Logger,
 ) *Service {
 	return &Service{
 		userRepository,
 		refreshTokenService,
-		jwtGenerator,
 		hasher,
 		tokenExpiration,
+		signingMethod,
+		keyfunc,
 		logger,
 	}
 }
@@ -69,16 +70,19 @@ func (s *Service) Login(ctx context.Context, req schema.LoginRequest) (schema.Se
 	if err := req.Validate(); err != nil {
 		return schema.Session{}, err
 	}
-	user, err := s.userRepository.GetFromUsername(
+	user := entity.User{
+		Email: req.Username,
+	}
+	err := s.userRepository.Get(
 		ctx,
-		req.Username,
+		&user,
 	)
 	if err != nil {
 		return schema.Session{}, err
 	}
 
-	if !s.hasher.AreSameHash(req.Password, user.Password) {
-		return schema.Session{}, auth.ErrWrongPassword
+	if !s.hasher.AreSameHash(req.Password, user.HashedPassword) {
+		return schema.Session{}, ErrWrongPassword
 	}
 
 	jwt, err := s.GenerateJWT(ctx, user)
@@ -86,10 +90,10 @@ func (s *Service) Login(ctx context.Context, req schema.LoginRequest) (schema.Se
 		return schema.Session{}, err
 	}
 
-	refreshToken, err := s.refreshTokenService.Create(
+	refreshJWT, err := s.refreshTokenService.Create(
 		ctx,
 		refreshtokenschema.CreateRequest{
-			UserUUID: user.UUID,
+			UserID: user.ID,
 		},
 	)
 	if err != nil {
@@ -97,8 +101,8 @@ func (s *Service) Login(ctx context.Context, req schema.LoginRequest) (schema.Se
 	}
 
 	return schema.Session{
-		Token:        jwt,
-		RefreshToken: refreshToken,
+		JWT:        jwt,
+		RefreshJWT: refreshJWT,
 	}, nil
 }
 
@@ -107,14 +111,17 @@ func (s *Service) RefreshSession(ctx context.Context, req refreshtokenschema.Ref
 		return schema.Session{}, err
 	}
 	newRefreshJWT, err := s.refreshTokenService.Refresh(ctx, req)
-
 	if err != nil {
 		return schema.Session{}, err
 	}
-
-	user, err := s.userRepository.Get(
+	user := entity.User{
+		Model: gorm.Model{
+			ID: req.UserID,
+		},
+	}
+	err = s.userRepository.Get(
 		ctx,
-		req.UserUUID,
+		&user,
 	)
 	if err != nil {
 		return schema.Session{}, err
@@ -133,7 +140,7 @@ func (s *Service) Logout(ctx context.Context, req schema.LogoutRequest) error {
 		return err
 	}
 	return s.refreshTokenService.DeleteFromUser(ctx, refreshtokenschema.DeleteFromUserRequest{
-		req.UserUUID,
+		req.UserID,
 	})
 }
 
@@ -141,16 +148,14 @@ func (s *Service) Logout(ctx context.Context, req schema.LogoutRequest) error {
 func (s *Service) GenerateJWT(ctx context.Context, user entity.User) (string, error) {
 	claim := schema.MakeUserClaim(user, s.tokenExpiration)
 
-	JWT, err := s.jwtGenerator.GenerateJWT(ctx, claim)
+	token := jwt.NewWithClaims(s.SigningMethod, claim)
+	key, err := s.Keyfunc(token)
+	if err != nil {
+		return "", err
+	}
+	JWT, err := token.SignedString(key)
 	if err != nil {
 		return "", err
 	}
 	return JWT, nil
-}
-
-type Claim interface {
-	Valid() error
-	GetUUID() uuid.UUID
-	GetAdministrator() optional.Optional[bool]
-	GetConfirmed() optional.Optional[bool]
 }

@@ -3,36 +3,33 @@ package auth
 import (
 	"bytes"
 	"context"
+	"crypto/rsa"
 	"database/sql"
 	"testing"
 
+	"github.com/gaetanDubuc/beeckend/internal/authenticator/schema"
+	"github.com/gaetanDubuc/beeckend/internal/authenticator/testutils"
+	"github.com/gaetanDubuc/beeckend/internal/entity"
+	refreshtokenschema "github.com/gaetanDubuc/beeckend/internal/refresh-token/schema"
+	"github.com/gaetanDubuc/beeckend/pkg/log"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
-	auth "gitlab.com/fogo-dev/infrastructure/web-api/internal/auth"
-	refreshtokenschema "gitlab.com/fogo-dev/infrastructure/web-api/internal/auth/refresh-token/schema"
-	rfshtestutils "gitlab.com/fogo-dev/infrastructure/web-api/internal/auth/refresh-token/testutils"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/auth/schema"
-	authtestutils "gitlab.com/fogo-dev/infrastructure/web-api/internal/auth/testutils"
-	cryptotestutils "gitlab.com/fogo-dev/infrastructure/web-api/internal/crypto/testutils"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/entity"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/test"
-	usertestutils "gitlab.com/fogo-dev/infrastructure/web-api/internal/user/testutils/v2"
-	"gitlab.com/fogo-dev/infrastructure/web-api/pkg/log"
+
 	"go.uber.org/zap/zaptest/observer"
 )
 
 type ServiceTestSuite struct {
 	suite.Suite
 	ctx      context.Context
-	logger   log.Logger
+	logger   *log.Logger
 	observer *observer.ObservedLogs
 	buffer   *bytes.Buffer
 
 	service             *Service
-	userRepository      *usertestutils.Repository
-	refreshTokenService *rfshtestutils.Repository
-	jwtGenerator        *authtestutils.JWTGenerator
-	hasher              *cryptotestutils.Hasher
+	userRepository      *testutils.UserRepository
+	refreshTokenService *testutils.RefreshTokenRepository
+	hasher              *testutils.Hasher
 }
 
 // this function executes before the test suite begins execution.
@@ -45,15 +42,20 @@ func (suite *ServiceTestSuite) SetupSuite() {
 
 	suite.userRepository = &usertestutils.Repository{}
 	suite.refreshTokenService = &rfshtestutils.Repository{}
-	suite.jwtGenerator = &authtestutils.JWTGenerator{}
 	suite.hasher = &cryptotestutils.Hasher{}
+
+	privateKey, err := rsa.GenerateKey()
+	suite.NoError(err)
 
 	suite.service = NewService(
 		suite.userRepository,
 		suite.refreshTokenService,
-		suite.jwtGenerator,
 		suite.hasher,
 		10,
+		jwt.SigningMethodRS256,
+		func(t *jwt.Token) (interface{}, error) {
+			return privateKey, nil
+		},
 		logger,
 	)
 }
@@ -66,7 +68,6 @@ func (suite *ServiceTestSuite) SetupTest() {
 func (suite *ServiceTestSuite) TearDownTest() {
 	suite.userRepository.AssertExpectations(suite.T())
 	suite.refreshTokenService.AssertExpectations(suite.T())
-	suite.jwtGenerator.AssertExpectations(suite.T())
 	suite.hasher.AssertExpectations(suite.T())
 	suite.T().Log(suite.buffer)
 }

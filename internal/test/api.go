@@ -68,6 +68,11 @@ func (tc APITestCase[T]) WithURL(URL url.URL) APITestCase[T] {
 	return tc
 }
 
+func (tc APITestCase[T]) WithScheme(scheme string) APITestCase[T] {
+	tc.URL.Scheme = scheme
+	return tc
+}
+
 func (tc APITestCase[T]) WithHost(host string) APITestCase[T] {
 	tc.URL.Host = host
 	return tc
