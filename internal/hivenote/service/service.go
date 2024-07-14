@@ -74,7 +74,9 @@ func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.
 	}
 
 	// check if the hive exists in the cheptel.
-	err = s.hiveRepository.Get(ctx, &entity.Hive{Model: gorm.Model{ID: req.HiveID}, CheptelID: req.CheptelID})
+	err = s.hiveRepository.Get(ctx, &entity.Hive{
+		Model:     gorm.Model{ID: req.HiveID},
+		CheptelID: req.CheptelID})
 	if err != nil {
 		return entity.HiveNote{}, err
 	}

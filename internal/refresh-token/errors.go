@@ -3,7 +3,7 @@ package refreshtoken
 import (
 	e "errors"
 
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/errors"
+	"github.com/gaetanDubuc/beeckend/internal/errors"
 )
 
 var (

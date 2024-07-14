@@ -20,7 +20,7 @@ type HiveNote struct {
 	Albums      []HiveNoteAlbum `gorm:"constraint:OnDelete:CASCADE;foreignKey:OwnerID"`
 }
 
-// Validate User structure.
+// Validate HiveNote structure.
 func (h HiveNote) Validate() error {
 	return validation.ValidateStruct(&h,
 		validation.Field(&h.HiveID, validation.Required),

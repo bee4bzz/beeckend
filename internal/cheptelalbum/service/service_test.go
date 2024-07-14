@@ -239,10 +239,10 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 					test.ValidCheptel.ID,
 					test.ValidUser.ID).Return(nil).Once()
 				suite.Repository.On("Get", &entity.CheptelAlbum{
+					Model: gorm.Model{
+						ID: test.ValidCheptelAlbum.ID,
+					},
 					Album: entity.Album{
-						Model: gorm.Model{
-							ID: test.ValidCheptelAlbum.ID,
-						},
 						OwnerID: test.ValidCheptel.ID,
 					},
 				}).Return(test.ValidCheptelAlbum, test.AnError).Once()
@@ -263,10 +263,10 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 					test.ValidCheptel.ID,
 					test.ValidUser.ID).Return(nil).Once()
 				suite.Repository.On("Get", &entity.CheptelAlbum{
+					Model: gorm.Model{
+						ID: test.ValidCheptelAlbum.ID,
+					},
 					Album: entity.Album{
-						Model: gorm.Model{
-							ID: test.ValidCheptelAlbum.ID,
-						},
 						OwnerID: test.ValidCheptel.ID,
 					},
 				}).Return(test.ValidCheptelAlbum, nil).Once()
@@ -291,10 +291,10 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 					test.ValidCheptel.ID,
 					test.ValidUser.ID).Return(nil).Once()
 				suite.Repository.On("Get", &entity.CheptelAlbum{
+					Model: gorm.Model{
+						ID: test.ValidCheptelAlbum.ID,
+					},
 					Album: entity.Album{
-						Model: gorm.Model{
-							ID: test.ValidCheptelAlbum.ID,
-						},
 						OwnerID: test.ValidCheptel.ID,
 					},
 				}).Return(test.ValidCheptelAlbum, nil).Once()
@@ -303,10 +303,10 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 					test.ValidCheptel.ID,
 					test.ValidUser.ID).Return(nil).Once()
 				suite.Repository.On("Update", &entity.CheptelAlbum{
+					Model: gorm.Model{
+						ID: test.ValidCheptelAlbum.ID,
+					},
 					Album: entity.Album{
-						Model: gorm.Model{
-							ID: test.ValidCheptelAlbum.ID,
-						},
 						OwnerID: test.ValidCheptel.ID,
 					},
 				}).Return(test.ValidCheptelAlbum, test.AnError).Once()
@@ -336,18 +336,16 @@ func (suite *RepositoryTestSuite) TestUpdateSuccess() {
 					test.ValidCheptel.ID,
 					test.ValidUser.ID).Return(nil).Once()
 				suite.Repository.On("Get", &entity.CheptelAlbum{
+					Model: gorm.Model{
+						ID: test.ValidCheptelAlbum.ID,
+					},
 					Album: entity.Album{
-						Model: gorm.Model{
-							ID: test.ValidCheptelAlbum.ID,
-						},
 						OwnerID: test.ValidCheptel.ID,
 					},
 				}).Return(test.ValidCheptelAlbum, nil).Once()
 				suite.Repository.On("Update", &entity.CheptelAlbum{
-					Album: entity.Album{
-						Model: gorm.Model{
-							ID: test.ValidCheptelAlbum.ID,
-						},
+					Model: gorm.Model{
+						ID: test.ValidCheptelAlbum.ID,
 					},
 				}).Return(test.ValidCheptelAlbum, nil).Once()
 			},
@@ -366,10 +364,10 @@ func (suite *RepositoryTestSuite) TestUpdateSuccess() {
 					test.ValidCheptel.ID,
 					test.ValidUser.ID).Return(nil).Once()
 				suite.Repository.On("Get", &entity.CheptelAlbum{
+					Model: gorm.Model{
+						ID: test.ValidCheptelAlbum.ID,
+					},
 					Album: entity.Album{
-						Model: gorm.Model{
-							ID: test.ValidCheptelAlbum.ID,
-						},
 						OwnerID: test.ValidCheptel.ID,
 					},
 				}).Return(test.ValidCheptelAlbum, nil).Once()
@@ -378,10 +376,10 @@ func (suite *RepositoryTestSuite) TestUpdateSuccess() {
 					test.ValidCheptel.ID,
 					test.ValidUser.ID).Return(nil).Once()
 				suite.Repository.On("Update", &entity.CheptelAlbum{
+					Model: gorm.Model{
+						ID: test.ValidCheptelAlbum.ID,
+					},
 					Album: entity.Album{
-						Model: gorm.Model{
-							ID: test.ValidCheptelAlbum.ID,
-						},
 						OwnerID: test.ValidCheptel.ID,
 					},
 				}).Return(test.ValidCheptelAlbum, nil).Once()
@@ -431,10 +429,10 @@ func (suite *RepositoryTestSuite) TestDeleteFail() {
 					test.ValidCheptel.ID,
 					test.ValidUser.ID).Return(nil).Once()
 				suite.Repository.On("SoftDelete", &entity.CheptelAlbum{
+					Model: gorm.Model{
+						ID: test.ValidCheptelAlbum.ID,
+					},
 					Album: entity.Album{
-						Model: gorm.Model{
-							ID: test.ValidCheptelAlbum.ID,
-						},
 						OwnerID: test.ValidCheptel.ID,
 					},
 				}).Return(test.AnError).Once()

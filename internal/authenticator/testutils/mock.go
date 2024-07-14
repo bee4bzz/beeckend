@@ -39,8 +39,9 @@ func (m *Middleware) AuthHandler(c *gin.Context) {
 }
 
 func (m *Middleware) OnlyUnauthenticated(c *gin.Context) {
-	status := m.Called().Get(0).(int)
-	if status != 0 {
+	args := m.Called()
+	if len(args) > 0 {
+		status := args.Get(0).(int)
 		c.AbortWithStatus(status)
 	}
 }

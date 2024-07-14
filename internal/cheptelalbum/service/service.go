@@ -129,10 +129,10 @@ func (s *Service) Update(
 	}
 
 	album := entity.CheptelAlbum{
+		Model: gorm.Model{
+			ID: req.AlbumID,
+		},
 		Album: entity.Album{
-			Model: gorm.Model{
-				ID: req.AlbumID,
-			},
 			OwnerID: req.CheptelID,
 		},
 	}
@@ -150,10 +150,10 @@ func (s *Service) Update(
 	}
 
 	album = entity.CheptelAlbum{
+		Model: gorm.Model{
+			ID: req.AlbumID,
+		},
 		Album: entity.Album{
-			Model: gorm.Model{
-				ID: req.AlbumID,
-			},
 			OwnerID: req.NewCheptelID,
 			Name:    req.NewName,
 		},
@@ -178,8 +178,8 @@ func (s *Service) Delete(ctx context.Context, req schema.Request) error {
 	}
 
 	album := entity.CheptelAlbum{
+		Model: gorm.Model{ID: req.AlbumID},
 		Album: entity.Album{
-			Model:   gorm.Model{ID: req.AlbumID},
 			OwnerID: req.CheptelID,
 		},
 	}

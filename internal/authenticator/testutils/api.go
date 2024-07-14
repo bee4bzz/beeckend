@@ -19,14 +19,14 @@ var (
 			Path: path.LoginPath,
 		},
 		WantStatus:   utils.Int(http.StatusOK),
-		WantResponse: utils.String(".*token.*refresh_token.*"),
+		WantResponse: utils.String(".*jwt.*refresh_jwt.*"),
 	}
 
 	RefreshSessionRootTest = test.APITestCase[schema.Session]{
 		Method:       utils.String("POST"),
 		URL:          &url.URL{Path: path.RefreshSessionPath},
 		WantStatus:   utils.Int(http.StatusOK),
-		WantResponse: utils.String(".*token.*refresh_token.*"),
+		WantResponse: utils.String(".*jwt.*refresh_jwt.*"),
 	}
 
 	PublicKeyRootTest = test.APITestCase[schema.PublicKeyResponse]{

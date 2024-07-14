@@ -9,7 +9,7 @@ import (
 
 var (
 	InValidHiveNoteAlbum = HiveNoteAlbum{
-		Album{
+		Album: Album{
 			Name:        "Album",
 			OwnerID:     1,
 			Observation: utils.String(""),

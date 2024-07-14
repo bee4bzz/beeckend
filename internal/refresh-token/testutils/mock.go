@@ -3,8 +3,8 @@ package testutils
 import (
 	"context"
 
+	refreshtokenschema "github.com/gaetanDubuc/beeckend/internal/refresh-token/schema"
 	"github.com/stretchr/testify/mock"
-	refreshtokenschema "gitlab.com/fogo-dev/infrastructure/web-api/internal/auth/refresh-token/schema"
 )
 
 type Repository struct {

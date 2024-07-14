@@ -86,12 +86,12 @@ var (
 	}
 
 	ValidCheptelAlbum = entity.CheptelAlbum{
+		Model: gorm.Model{
+			ID:        1,
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		},
 		Album: entity.Album{
-			Model: gorm.Model{
-				ID:        1,
-				CreatedAt: time.Now().UTC(),
-				UpdatedAt: time.Now().UTC(),
-			},
 			Name:    "ValidCheptelAlbum",
 			OwnerID: 1,
 		},
@@ -134,10 +134,10 @@ var (
 	}
 
 	ValidHiveNoteAlbum = entity.HiveNoteAlbum{
+		Model: gorm.Model{
+			ID: 1,
+		},
 		Album: entity.Album{
-			Model: gorm.Model{
-				ID: 1,
-			},
 			Name:    "ValidHiveNoteAlbum",
 			OwnerID: 1},
 	}

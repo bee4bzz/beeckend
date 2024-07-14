@@ -13,15 +13,16 @@ const (
 )
 
 type CheptelAlbum struct {
+	gorm.Model
 	Album `gorm:"embedded"`
 }
 
 type HiveNoteAlbum struct {
+	gorm.Model
 	Album `gorm:"embedded"`
 }
 
 type Album struct {
-	gorm.Model
 	Name        string `gorm:"index:,unique,composite:key;not null"`
 	Observation *string
 	OwnerID     uint    `gorm:"index:,unique,composite:key;not null"`

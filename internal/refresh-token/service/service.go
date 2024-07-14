@@ -5,14 +5,13 @@ import (
 	"time"
 	ti "time"
 
-	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/gaetanDubuc/beeckend/internal/entity"
+	"github.com/gaetanDubuc/beeckend/internal/refresh-token/schema"
+	tokenschema "github.com/gaetanDubuc/beeckend/internal/token/schema"
+	"github.com/gaetanDubuc/beeckend/pkg/log"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/auth/refresh-token/schema"
-	"gitlab.com/fogo-dev/infrastructure/web-api/internal/entity"
-	tokenschema "gitlab.com/fogo-dev/infrastructure/web-api/internal/token/schema"
-	"gitlab.com/fogo-dev/infrastructure/web-api/pkg/log"
-	val "gitlab.com/fogo-dev/infrastructure/web-api/pkg/validation"
 )
 
 type JWTGenerator interface {
@@ -63,7 +62,7 @@ func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (string,
 	token, err := s.TokenService.Create(
 		ctx,
 		tokenschema.CreateRequest{
-			OwnerUUID: req.UserUUID,
+			OwnerUUID: req.UserID,
 			OwnerType: entity.RefreshTokenType,
 		},
 	)
@@ -85,7 +84,7 @@ func (s *Service) Refresh(ctx context.Context, req schema.RefreshRequest) (strin
 	err := s.TokenService.ConfirmAndDelete(
 		ctx,
 		tokenschema.ConfirmRequest{
-			OwnerUUID:  req.UserUUID,
+			OwnerUUID:  req.UserID,
 			OwnerType:  entity.RefreshTokenType,
 			Expiration: s.expiration,
 			TokenUUID:  req.TokenUUID,
@@ -100,7 +99,7 @@ func (s *Service) Refresh(ctx context.Context, req schema.RefreshRequest) (strin
 	jwt, err := s.Create(
 		ctx,
 		schema.CreateRequest{
-			UserUUID: req.UserUUID,
+			UserID: req.UserID,
 		},
 	)
 	if err != nil {
@@ -116,7 +115,7 @@ func (s *Service) DeleteFromUser(ctx context.Context, req schema.DeleteFromUserR
 	}
 	err := s.TokenService.DeleteBy(
 		ctx,
-		map[string]any{"owner_UUID": req.UserUUID.String()},
+		map[string]any{"owner_UUID": req.UserID.String()},
 		string(entity.RefreshTokenType),
 	)
 	if err != nil {

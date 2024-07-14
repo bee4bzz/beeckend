@@ -10,14 +10,14 @@ import (
 var (
 	emptyAlbum          = CheptelAlbum{}
 	InValidCheptelAlbum = CheptelAlbum{
-		Album{
+		Album: Album{
 			Name:        "Album",
 			OwnerID:     1,
 			Observation: utils.String(""),
 		},
 	}
 	ValidCheptelAlbum = CheptelAlbum{
-		Album{
+		Album: Album{
 			Name:    "Album",
 			OwnerID: 1,
 		},

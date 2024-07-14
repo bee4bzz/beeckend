@@ -52,10 +52,10 @@ func (suite *RepositoryIntegrationSuite) TearDownTest() {
 
 func (suite *RepositoryIntegrationSuite) TestCreate() {
 	album := entity.CheptelAlbum{
+		Model: gorm.Model{
+			ID: 100,
+		},
 		Album: entity.Album{
-			Model: gorm.Model{
-				ID: 100,
-			},
 			Name:    "new album",
 			OwnerID: test.ValidCheptel.ID,
 		},
@@ -80,7 +80,8 @@ func (suite *RepositoryIntegrationSuite) TestCreateFail() {
 func (suite *RepositoryIntegrationSuite) TestUpdate() {
 	now := time.Now()
 	album := entity.CheptelAlbum{
-		Album: entity.Album{Model: gorm.Model{ID: test.ValidCheptelAlbum.ID}, Name: "new name"},
+		Model: gorm.Model{ID: test.ValidCheptelAlbum.ID},
+		Album: entity.Album{Name: "new name"},
 	}
 	err := suite.Repository.Update(suite.ctx, &album)
 	assert.NoError(suite.T(), err)
@@ -90,7 +91,7 @@ func (suite *RepositoryIntegrationSuite) TestUpdate() {
 
 func (suite *RepositoryIntegrationSuite) TestGet() {
 	album := entity.CheptelAlbum{
-		entity.Album{Model: gorm.Model{ID: test.ValidCheptelAlbum.ID}},
+		Model: gorm.Model{ID: test.ValidCheptelAlbum.ID},
 	}
 	err := suite.Repository.Get(suite.ctx, &album)
 	assert.NoError(suite.T(), err)
