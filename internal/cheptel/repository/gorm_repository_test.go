@@ -92,7 +92,7 @@ func (suite *RepositoryTestSuite) TestQueryByUser() {
 				(*suite.mock).ExpectQuery(
 					`SELECT .* 
 					FROM "cheptel_albums" 
-					WHERE "cheptel_albums"\."owner_id" = \$1 AND "cheptel_albums"\."deleted_at" IS NULL`,
+					WHERE "cheptel_albums"\."cheptel_id" = \$1 AND "cheptel_albums"\."deleted_at" IS NULL`,
 				).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}))
 				(*suite.mock).ExpectQuery(
 					`SELECT .* FROM "hives" WHERE "hives"\."cheptel_id" = \$1 AND "hives"\."deleted_at" IS NULL`,
@@ -185,12 +185,14 @@ func (suite *RepositoryTestSuite) Test_A_User_Can_Subscribe_To_Cheptels_Modifica
 
 	err := suite.Repository.Subscribe(suite.ctx, &test.ValidUser, cheptels)
 
-	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *<-cheptels, 1)
-	assert.Len(suite.T(), *<-cheptels, 1)
-	v, ok := <-cheptels
-	assert.Nil(suite.T(), v)
-	assert.False(suite.T(), ok)
+	ok := assert.NoError(suite.T(), err)
+	if ok {
+		assert.Len(suite.T(), *<-cheptels, 1)
+		assert.Len(suite.T(), *<-cheptels, 1)
+		v, ok := <-cheptels
+		assert.Nil(suite.T(), v)
+		assert.False(suite.T(), ok)
+	}
 }
 
 func (suite *RepositoryTestSuite) Test_Return_Error_When_A_User_Can_Not_Subscribe_To_Modifications() {
@@ -352,7 +354,7 @@ func RegisterExpectexQueryByUser(mock *sqlmock.Sqlmock) {
 	(*mock).ExpectQuery(
 		`SELECT .* 
 	FROM "cheptel_albums" 
-	WHERE "cheptel_albums"\."owner_id" = \$1 AND "cheptel_albums"\."deleted_at" IS NULL`,
+	WHERE "cheptel_albums"\."cheptel_id" = \$1 AND "cheptel_albums"\."deleted_at" IS NULL`,
 	).WithArgs(test.ValidCheptel.ID).WillReturnRows(sqlmock.NewRows([]string{"id"}))
 	(*mock).ExpectQuery(
 		`SELECT .* FROM "hives" WHERE "hives"\."cheptel_id" = \$1 AND "hives"\."deleted_at" IS NULL`,

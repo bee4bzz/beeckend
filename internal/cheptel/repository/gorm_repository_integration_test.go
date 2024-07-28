@@ -144,6 +144,9 @@ func (suite *RepositoryIntegrationSuite) Test_A_User_Can_Subscribe_To_Cheptels_M
 	err = suite.Repository.SoftDelete(ctx, &entity.Cheptel{Model: gorm.Model{ID: test.ValidUser.Cheptels[0].ID}})
 	assert.NoError(suite.T(), err)
 
+	err = suite.Repository.Create(ctx, &test.ValidCheptel)
+	assert.Error(suite.T(), err)
+
 	testutils.AssertCheptels(suite.T(), test.ValidUser.Cheptels[1:], *<-cheptels)
 
 	cancel()
