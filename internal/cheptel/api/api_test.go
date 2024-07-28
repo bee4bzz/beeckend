@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	authtestutils "github.com/gaetanDubuc/beeckend/internal/authenticator/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/cheptel/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
@@ -38,10 +39,11 @@ type APITestSuite struct {
 
 	server *httptest.Server
 
-	service  *testutils.Service
-	upgrader *testutils.Upgrader
-	conn     *testutils.WSConn
-	resource *Resource[*testutils.WSConn]
+	service        *testutils.Service
+	authMiddleware *authtestutils.Middleware
+	upgrader       *testutils.Upgrader
+	conn           *testutils.WSConn
+	resource       *Resource[*testutils.WSConn]
 
 	QueryRootTest test.APITestCase[[]entity.Cheptel]
 }
@@ -66,11 +68,13 @@ func (suite *APITestSuite) SetupTest() {
 	)
 
 	suite.service = &testutils.Service{}
+	suite.authMiddleware = &authtestutils.Middleware{}
 
 	upgrader := &websocket.Upgrader{}
 	RegisterHandlers(
 		suite.router.Group(""),
 		suite.service,
+		suite.authMiddleware,
 		upgrader,
 		suite.logger,
 	)
@@ -86,10 +90,12 @@ func (suite *APITestSuite) SetupTest() {
 
 	suite.upgrader = &testutils.Upgrader{}
 	suite.conn = &testutils.WSConn{}
+
 	suite.resource = &Resource[*testutils.WSConn]{
-		upgrader: suite.upgrader,
-		service:  suite.service,
-		logger:   suite.logger,
+		upgrader:       suite.upgrader,
+		service:        suite.service,
+		authMiddleware: suite.authMiddleware,
+		logger:         suite.logger,
 	}
 
 }
@@ -103,12 +109,12 @@ func (suite *APITestSuite) TearDownTest() {
 }
 
 func (suite *APITestSuite) Test_User_Can_Subscribe_To_Cheptels_Modifications() {
-	expectedStream := []*[]entity.Cheptel{
+	expectedStates := []*[]entity.Cheptel{
 		&test.ValidUser.Cheptels,
 	}
 	suite.service.On("Subscribe", &entity.User{}).
 		Return(
-			expectedStream,
+			expectedStates,
 			nil).Once()
 
 	c := suite.QueryRootTest.
@@ -117,7 +123,7 @@ func (suite *APITestSuite) Test_User_Can_Subscribe_To_Cheptels_Modifications() {
 	defer c.Close()
 
 	cheptels := &[]entity.Cheptel{}
-	actualStream := []*[]entity.Cheptel{}
+	actualStates := []*[]entity.Cheptel{}
 	for {
 		_, message, err := c.ReadMessage()
 		if err != nil {
@@ -128,9 +134,9 @@ func (suite *APITestSuite) Test_User_Can_Subscribe_To_Cheptels_Modifications() {
 			assert.NoError(suite.T(), err)
 			suite.T().FailNow()
 		}
-		actualStream = append(actualStream, cheptels)
+		actualStates = append(actualStates, cheptels)
 	}
-	assert.Equal(suite.T(), expectedStream, actualStream)
+	assert.Equal(suite.T(), expectedStates, actualStates)
 }
 
 func (suite *APITestSuite) Test_Return_An_Error_When_The_Request_Can_Not_Be_Upgraded() {

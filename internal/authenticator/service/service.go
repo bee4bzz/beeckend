@@ -1,4 +1,4 @@
-package auth
+package service
 
 import (
 	"context"
@@ -42,8 +42,8 @@ type (
 	}
 )
 
-// NewService creates a new authentication service.
-func NewService(
+// New creates a new authentication service.
+func New(
 	userRepository UserRepository,
 	refreshTokenService RefreshTokenService,
 	hasher Hasher,
@@ -85,7 +85,7 @@ func (s *Service) Login(ctx context.Context, req schema.LoginRequest) (schema.Se
 		return schema.Session{}, ErrWrongPassword
 	}
 
-	jwt, err := s.GenerateJWT(ctx, user)
+	jwt, err := s.GenerateJWT(ctx, user.ID)
 	if err != nil {
 		return schema.Session{}, err
 	}
@@ -127,7 +127,7 @@ func (s *Service) RefreshSession(ctx context.Context, req refreshtokenschema.Ref
 		return schema.Session{}, err
 	}
 
-	newJWT, err := s.GenerateJWT(ctx, user)
+	newJWT, err := s.GenerateJWT(ctx, user.ID)
 	if err != nil {
 		return schema.Session{}, err
 	}
@@ -140,13 +140,13 @@ func (s *Service) Logout(ctx context.Context, req schema.LogoutRequest) error {
 		return err
 	}
 	return s.refreshTokenService.DeleteFromUser(ctx, refreshtokenschema.DeleteFromUserRequest{
-		req.UserID,
+		UserID: req.UserID,
 	})
 }
 
 // GenerateJWT generates a JWT token for a given user.
-func (s *Service) GenerateJWT(ctx context.Context, user entity.User) (string, error) {
-	claim := schema.MakeUserClaim(user, s.tokenExpiration)
+func (s *Service) GenerateJWT(ctx context.Context, userID uint) (string, error) {
+	claim := schema.MakeUserClaim(userID, s.tokenExpiration)
 
 	token := jwt.NewWithClaims(s.SigningMethod, claim)
 	key, err := s.Keyfunc(token)

@@ -3,7 +3,6 @@ package schema
 import (
 	"time"
 
-	"github.com/gaetanDubuc/beeckend/internal/entity"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/golang-jwt/jwt/v5"
@@ -11,8 +10,7 @@ import (
 )
 
 const (
-	TokenJSONKey        = "token"
-	RefreshTokenJSONKey = "refresh_token"
+	Type = "access"
 )
 
 // LoginRequest.
@@ -53,10 +51,11 @@ type PublicKeyResponse struct {
 	PublicKey string `json:"key"`
 }
 
-func MakeUserClaim(user entity.User, expiration int) *Claims {
+func MakeUserClaim(userID uint, expiration int) *Claims {
 	now := time.Now().UTC()
 	return &Claims{
-		UserID: user.ID,
+		UserID: userID,
+		Type:   Type,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.NewString(),
 			Issuer:    "beeckend",
@@ -69,11 +68,13 @@ func MakeUserClaim(user entity.User, expiration int) *Claims {
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID uint `json:"user_ID"`
+	UserID uint   `json:"user_ID"`
+	Type   string `json:"type"`
 }
 
 func (c *Claims) Validate() error {
 	return validation.ValidateStruct(c,
 		validation.Field(&c.UserID, validation.Required),
+		validation.Field(&c.Type, validation.In(Type)),
 	)
 }

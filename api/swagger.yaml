@@ -1,5 +1,43 @@
+basePath: /api/v1
+definitions:
+  github_com_gaetanDubuc_beeckend_internal_authenticator_schema.LoginRequest:
+    properties:
+      password:
+        example: test12345
+        type: string
+      username:
+        example: user@example.com
+        type: string
+    type: object
+  github_com_gaetanDubuc_beeckend_internal_authenticator_schema.PublicKeyResponse:
+    properties:
+      key:
+        type: string
+    type: object
+  github_com_gaetanDubuc_beeckend_internal_authenticator_schema.Session:
+    properties:
+      jwt:
+        type: string
+      refresh_jwt:
+        type: string
+    type: object
+  github_com_gaetanDubuc_beeckend_internal_cheptel_schema.CreateRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  github_com_gaetanDubuc_beeckend_internal_refresh-token_schema.RefreshRequest:
+    properties:
+      challenge:
+        type: string
+      token:
+        type: string
+    type: object
 info:
   contact: {}
+  description: 'JWT Token: You must precede the token with `Bearer `'
+  title: Beeckend API
+  version: NA
 paths:
   /cheptels:
     get:
@@ -11,8 +49,107 @@ paths:
         "200":
           description: OK
           schema:
-            type: query
+            type: string
       summary: Query the user's cheptels
       tags:
       - Cheptel
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Cheptel to create
+        in: body
+        name: cheptel
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_gaetanDubuc_beeckend_internal_cheptel_schema.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - JWT Token: []
+      summary: Create a cheptel
+      tags:
+      - Cheptel
+  /login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Credentials
+        in: body
+        name: creds
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.Session'
+      security:
+      - BasicAuth: []
+      tags:
+      - auth
+  /logout:
+    delete:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - JWT Token: []
+      tags:
+      - auth
+  /public-key:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.PublicKeyResponse'
+      tags:
+      - auth
+  /refresh-jwt:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Credentials
+        in: body
+        name: creds
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_gaetanDubuc_beeckend_internal_refresh-token_schema.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.Session'
+      security:
+      - JWT Token: []
+      tags:
+      - auth
+securityDefinitions:
+  BasicAuth:
+    type: basic
+  JWT Token:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

@@ -70,9 +70,6 @@ func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.
 	}
 
 	cheptel := entity.Cheptel{
-		Model: gorm.Model{
-			ID: req.CheptelID,
-		},
 		Name: req.Name,
 	}
 

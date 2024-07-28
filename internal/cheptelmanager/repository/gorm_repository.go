@@ -19,7 +19,7 @@ func NewGormRepository(db *db.DB) *GormRepository {
 }
 
 func (r *GormRepository) Get(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error {
-	err := r.db.DB().Model(user).Association(entity.CheptelsKey).Find(cheptel)
+	err := r.db.With(ctx).Model(user).Association(entity.CheptelsKey).Find(cheptel)
 	if err != nil {
 		return err
 	} else if cheptel.CreatedAt.IsZero() {
@@ -29,13 +29,13 @@ func (r *GormRepository) Get(ctx context.Context, user *entity.User, cheptel *en
 }
 
 func (r *GormRepository) Create(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error {
-	return r.db.DB().Model(user).Omit(entity.CheptelsKey + ".*").Association(entity.CheptelsKey).Append(cheptel)
+	return r.db.With(ctx).Model(user).Omit(entity.CheptelsKey + ".*").Association(entity.CheptelsKey).Append(cheptel)
 }
 
 func (r *GormRepository) Update(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error {
-	return r.db.DB().Model(user).Omit(entity.CheptelsKey + ".*").Association(entity.CheptelsKey).Replace(cheptel)
+	return r.db.With(ctx).Model(user).Omit(entity.CheptelsKey + ".*").Association(entity.CheptelsKey).Replace(cheptel)
 }
 
 func (r *GormRepository) SoftDelete(ctx context.Context, user *entity.User, cheptel *entity.Cheptel) error {
-	return r.db.DB().Model(user).Association(entity.CheptelsKey).Delete(cheptel)
+	return r.db.With(ctx).Model(user).Association(entity.CheptelsKey).Delete(cheptel)
 }

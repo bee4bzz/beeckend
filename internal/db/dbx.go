@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -46,15 +47,19 @@ func (db *DB) With(ctx context.Context) *gorm.DB {
 // The transaction started is kept in the context and can be accessed via With().
 func (db *DB) TransactionHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		timeoutContext, _ := context.WithTimeout(
-			c.Request.Context(),
-			time.Second,
-		)
-
-		db.db.WithContext(timeoutContext).Transaction(func(tx *gorm.DB) error {
-			ctx := context.WithValue(tx.Statement.Context, txKey, tx)
+		db.db.Transaction(func(tx *gorm.DB) error {
+			timeoutContext, cancel := context.WithTimeout(c.Request.Context(), time.Second)
+			defer cancel()
+			ctx := context.WithValue(timeoutContext, txKey, tx)
 			c.Request = c.Request.WithContext(ctx)
 			c.Next()
+
+			// Check if the request has been aborted
+			if c.IsAborted() {
+				// Return an error to abort the transaction
+				return errors.New("aborted")
+			}
+
 			return nil
 		})
 	}

@@ -157,9 +157,9 @@ func (suite *RepositoryTestSuite) TestCreateFail() {
 					test.ValidUser.ID).Return(nil).Once()
 				suite.Repository.On("Create", &entity.CheptelAlbum{
 					Album: entity.Album{
-						Name:    "new album",
-						OwnerID: test.ValidCheptel.ID,
+						Name: "new album",
 					},
+					CheptelID: test.ValidCheptel.ID,
 				}).Return(test.ValidCheptelAlbum, test.AnError).Once()
 			},
 		},
@@ -189,9 +189,9 @@ func (suite *RepositoryTestSuite) TestCreateSuccess() {
 					test.ValidUser.ID).Return(nil).Once()
 				suite.Repository.On("Create", &entity.CheptelAlbum{
 					Album: entity.Album{
-						Name:    "new album",
-						OwnerID: test.ValidCheptel.ID,
+						Name: "new album",
 					},
+					CheptelID: test.ValidCheptel.ID,
 				}).Return(test.ValidCheptelAlbum, nil).Once()
 			},
 		},
@@ -242,9 +242,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 					Model: gorm.Model{
 						ID: test.ValidCheptelAlbum.ID,
 					},
-					Album: entity.Album{
-						OwnerID: test.ValidCheptel.ID,
-					},
+					CheptelID: test.ValidCheptel.ID,
 				}).Return(test.ValidCheptelAlbum, test.AnError).Once()
 			},
 		},
@@ -266,9 +264,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 					Model: gorm.Model{
 						ID: test.ValidCheptelAlbum.ID,
 					},
-					Album: entity.Album{
-						OwnerID: test.ValidCheptel.ID,
-					},
+					CheptelID: test.ValidCheptel.ID,
 				}).Return(test.ValidCheptelAlbum, nil).Once()
 				suite.CheptelManager.On(
 					"OnlyMember",
@@ -294,9 +290,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 					Model: gorm.Model{
 						ID: test.ValidCheptelAlbum.ID,
 					},
-					Album: entity.Album{
-						OwnerID: test.ValidCheptel.ID,
-					},
+					CheptelID: test.ValidCheptel.ID,
 				}).Return(test.ValidCheptelAlbum, nil).Once()
 				suite.CheptelManager.On(
 					"OnlyMember",
@@ -306,9 +300,7 @@ func (suite *RepositoryTestSuite) TestUpdateFail() {
 					Model: gorm.Model{
 						ID: test.ValidCheptelAlbum.ID,
 					},
-					Album: entity.Album{
-						OwnerID: test.ValidCheptel.ID,
-					},
+					CheptelID: test.ValidCheptel.ID,
 				}).Return(test.ValidCheptelAlbum, test.AnError).Once()
 			},
 		},
@@ -339,9 +331,7 @@ func (suite *RepositoryTestSuite) TestUpdateSuccess() {
 					Model: gorm.Model{
 						ID: test.ValidCheptelAlbum.ID,
 					},
-					Album: entity.Album{
-						OwnerID: test.ValidCheptel.ID,
-					},
+					CheptelID: test.ValidCheptel.ID,
 				}).Return(test.ValidCheptelAlbum, nil).Once()
 				suite.Repository.On("Update", &entity.CheptelAlbum{
 					Model: gorm.Model{
@@ -367,9 +357,7 @@ func (suite *RepositoryTestSuite) TestUpdateSuccess() {
 					Model: gorm.Model{
 						ID: test.ValidCheptelAlbum.ID,
 					},
-					Album: entity.Album{
-						OwnerID: test.ValidCheptel.ID,
-					},
+					CheptelID: test.ValidCheptel.ID,
 				}).Return(test.ValidCheptelAlbum, nil).Once()
 				suite.CheptelManager.On(
 					"OnlyMember",
@@ -379,9 +367,7 @@ func (suite *RepositoryTestSuite) TestUpdateSuccess() {
 					Model: gorm.Model{
 						ID: test.ValidCheptelAlbum.ID,
 					},
-					Album: entity.Album{
-						OwnerID: test.ValidCheptel.ID,
-					},
+					CheptelID: test.ValidCheptel.ID,
 				}).Return(test.ValidCheptelAlbum, nil).Once()
 			},
 		},
@@ -432,9 +418,7 @@ func (suite *RepositoryTestSuite) TestDeleteFail() {
 					Model: gorm.Model{
 						ID: test.ValidCheptelAlbum.ID,
 					},
-					Album: entity.Album{
-						OwnerID: test.ValidCheptel.ID,
-					},
+					CheptelID: test.ValidCheptel.ID,
 				}).Return(test.AnError).Once()
 			},
 		},

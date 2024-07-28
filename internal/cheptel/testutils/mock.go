@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gaetanDubuc/beeckend/internal/cheptel/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/mock"
@@ -60,6 +61,11 @@ func (s *Service) Subscribe(ctx context.Context, user *entity.User, cheptels cha
 		close(cheptels)
 	}()
 	return nil
+}
+
+func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (entity.Cheptel, error) {
+	args := s.Called(req)
+	return args.Get(0).(entity.Cheptel), args.Error(1)
 }
 
 type Pool struct {

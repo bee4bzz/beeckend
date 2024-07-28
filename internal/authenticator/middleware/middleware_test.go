@@ -6,15 +6,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gaetanDubuc/beeckend/internal/authenticator/schema"
 	"github.com/gaetanDubuc/beeckend/internal/authenticator/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	"github.com/gaetanDubuc/beeckend/internal/errors"
 	"github.com/gaetanDubuc/beeckend/internal/test"
 	"github.com/gaetanDubuc/beeckend/pkg/log"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap/zaptest/observer"
@@ -44,7 +45,7 @@ func (suite *MiddlewareTestSuite) SetupTest() {
 	suite.c, suite.recorder = test.NewContext()
 
 	suite.UserRepository = &testutils.UserRepository{}
-	suite.middleware = NewMiddleware(
+	suite.middleware = New(
 		"HS256",
 		func(t *jwt.Token) (interface{}, error) { return []byte("secret"), nil },
 		suite.UserRepository,
@@ -64,7 +65,7 @@ func (suite *MiddlewareTestSuite) Test_Authentication_Is_Handled_Without_Error()
 	}).Return(test.ValidUser, nil).Once()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, schema.MakeUserClaim(
-		test.ValidUser,
+		test.ValidUser.ID,
 		1,
 	))
 	key, err := suite.middleware.keyfunc(token)
@@ -101,7 +102,7 @@ func (suite *MiddlewareTestSuite) Test_Abort_When_The_Repository_Could_Not_Find_
 	}).Return(entity.User{}, sql.ErrNoRows).Once()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, schema.MakeUserClaim(
-		test.ValidUser,
+		test.ValidUser.ID,
 		1,
 	))
 	key, err := suite.middleware.keyfunc(token)
@@ -115,7 +116,35 @@ func (suite *MiddlewareTestSuite) Test_Abort_When_The_Repository_Could_Not_Find_
 	// Assert
 	assert.True(suite.T(), suite.c.IsAborted())
 	assert.Equal(suite.T(), http.StatusUnauthorized, suite.recorder.Code)
-	assert.Equal(suite.T(), errors.ErrUnauthorized.Error(), suite.c.Errors.Last().Error())
+	assert.PanicsWithError(suite.T(), ErrUserNotAuthenticated.Error(), func() {
+		suite.middleware.CurrentAuthenticatedUser(suite.c.Request.Context())
+	})
+}
+
+func (suite *MiddlewareTestSuite) Test_Abort_When_The_JWT_Is_Incomplete() {
+	now := time.Now().UTC()
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &schema.Claims{
+		Type: "access",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.NewString(),
+			Issuer:    "beeckend",
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(1) * time.Second)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+		},
+	})
+	key, err := suite.middleware.keyfunc(token)
+	assert.NoError(suite.T(), err)
+	tokenString, err := token.SignedString(key)
+
+	suite.c.Request.Header.Set("Authorization", "Bearer "+tokenString)
+
+	suite.middleware.AuthHandler(suite.c)
+
+	// Assert
+	assert.True(suite.T(), suite.c.IsAborted())
+	assert.Equal(suite.T(), http.StatusUnauthorized, suite.recorder.Code)
 	assert.PanicsWithError(suite.T(), ErrUserNotAuthenticated.Error(), func() {
 		suite.middleware.CurrentAuthenticatedUser(suite.c.Request.Context())
 	})
@@ -136,7 +165,6 @@ func (suite *MiddlewareTestSuite) Test_Abort_When_The_Only_Unauthenticated_User_
 	// Assert
 	assert.True(suite.T(), suite.c.IsAborted())
 	assert.Equal(suite.T(), http.StatusForbidden, suite.recorder.Code)
-	assert.Equal(suite.T(), errors.ErrForbidden.Error(), suite.c.Errors.Last().Error())
 }
 
 func TestMiddlewareTestSuite(t *testing.T) {

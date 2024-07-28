@@ -1,6 +1,8 @@
 package db
 
 import (
+	"log"
+	"os"
 	"time"
 
 	l "github.com/gaetanDubuc/beeckend/internal/log"
@@ -29,8 +31,13 @@ func NewGorm(dial gorm.Dialector, logger logger.Interface) *DB {
 	return New(db.Session(&gorm.Session{}))
 }
 
-func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, log l.Logger) *DB {
-	db := NewGorm(dial, logger.Default)
+func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, logg l.Logger) *DB {
+	db := NewGorm(dial, logger.New(log.New(os.Stderr, "\r\n", log.LstdFlags), logger.Config{
+		SlowThreshold:             200 * time.Millisecond,
+		LogLevel:                  logger.Info,
+		IgnoreRecordNotFoundError: false,
+		Colorful:                  true,
+	}))
 
 	// make migration programmaticaly
 	m, err := migrate.New(
@@ -41,7 +48,7 @@ func NewGormWithMigrate(dial gorm.Dialector, sourceURL, databaseURL string, log 
 		panic(err)
 	}
 	if err := m.Up(); err != nil {
-		log.Info("failed to migrate up: ", err)
+		logg.Info("failed to migrate up: ", err)
 	}
 	return db
 }

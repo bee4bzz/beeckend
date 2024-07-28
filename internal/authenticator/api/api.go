@@ -69,8 +69,6 @@ type resource struct {
 //	@Produce	json
 //	@Param		creds	body		schema.LoginRequest	true	"Credentials"
 //	@Success	200		{object}	schema.Session
-//	@Failure	401		{object}	errors.ErrorResponse
-//	@Failure	500		{object}	errors.ErrorResponse
 //	@Router		/login [post]
 //	@Security	BasicAuth
 //
@@ -107,9 +105,7 @@ func (r resource) login(c *gin.Context) {
 //	@Accept		json
 //	@Produce	json
 //	@Success	200		{object}	schema.Session
-//	@Failure	401		{object}	errors.ErrorResponse
-//	@Failure	500		{object}	errors.ErrorResponse
-//	@Param		creds	body		token.ConfirmRequestBase	true	"Credentials"
+//	@Param		creds	body		refreshtokenschema.RefreshRequest	true	"Credentials"
 //	@Router		/refresh-jwt [post]
 //	@Security	JWT Token
 //
@@ -147,8 +143,6 @@ func (r resource) RefreshSession(c *gin.Context) {
 //	@Accept		json
 //	@Produce	json
 //	@Success	200	{object}	nil
-//	@Failure	401	{object}	errors.ErrorResponse
-//	@Failure	500	{object}	errors.ErrorResponse
 //	@Router		/logout [delete]
 //	@Security	JWT Token
 //
@@ -177,7 +171,6 @@ func (r resource) logout(c *gin.Context) {
 //	@Accept		json
 //	@Produce	json
 //	@Success	200	{object}	schema.PublicKeyResponse
-//	@Failure	500	{object}	errors.ErrorResponse
 //	@Router		/public-key [get]
 //
 //nolint:gofmt

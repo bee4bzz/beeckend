@@ -145,13 +145,12 @@ func (suite *ServiceIntegrationSuite) TestCreate() {
 	now := time.Now()
 
 	cheptel, err := suite.Service.Create(suite.ctx, schema.CreateRequest{
-		UserID:    test.ValidUser.ID,
-		CheptelID: uint(100),
-		Name:      "new name"})
+		UserID: test.ValidUser.ID,
+		Name:   "new name"})
 
 	assert.NoError(suite.T(), err)
 	testutils.AssertCheptelCreated(suite.T(), entity.Cheptel{Model: gorm.Model{
-		ID: 100,
+		ID: 3,
 	},
 		Name: "new name",
 	}, cheptel, now)
@@ -159,9 +158,8 @@ func (suite *ServiceIntegrationSuite) TestCreate() {
 
 func (suite *ServiceIntegrationSuite) TestCreateFail() {
 	validCreateReq := schema.CreateRequest{
-		UserID:    100,
-		CheptelID: 100,
-		Name:      "new name",
+		UserID: 100,
+		Name:   "new name",
 	}
 
 	invalidCreateReq := validCreateReq.CopyWith(

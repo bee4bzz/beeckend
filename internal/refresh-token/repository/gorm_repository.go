@@ -7,12 +7,12 @@ import (
 )
 
 type Repository struct {
-	*repository.Repository[entity.Token]
+	*repository.Repository[entity.RefreshToken]
 }
 
-// NewRepository creates a Repository using `db`.
-func NewRepository(db *db.DB) *Repository {
+// New creates a Repository using `db`.
+func New(db *db.DB) *Repository {
 	return &Repository{
-		Repository: repository.NewRepository[entity.Token](db),
+		Repository: repository.NewRepository[entity.RefreshToken](db),
 	}
 }

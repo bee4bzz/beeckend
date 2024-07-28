@@ -16,7 +16,7 @@ type Cheptel struct {
 	Name   string         `gorm:"not null"`
 	Hives  []Hive         `gorm:"constraint:OnDelete:CASCADE;"`
 	Notes  []CheptelNote  `gorm:"constraint:OnDelete:CASCADE;"`
-	Albums []CheptelAlbum `gorm:"constraint:OnDelete:CASCADE;foreignKey:OwnerID"`
+	Albums []CheptelAlbum `gorm:"constraint:OnDelete:CASCADE;foreignKey:CheptelID"`
 	Users  []User         `gorm:"many2many:user_cheptels;constraint:OnDelete:CASCADE;"`
 }
 

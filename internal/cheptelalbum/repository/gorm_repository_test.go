@@ -49,12 +49,15 @@ func (suite *RepositoryTestSuite) TearDownSuite() {
 
 func (suite *RepositoryTestSuite) TestQueryByOwnerIDs() {
 	(*suite.mock).ExpectQuery(`SELECT \* FROM "cheptel_albums" WHERE owner_id IN \(\$1\) AND "cheptel_albums"\."deleted_at" IS NULL`).
-		WithArgs(test.ValidCheptelAlbum.OwnerID).
+		WithArgs(test.ValidCheptelAlbum.CheptelID).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).
 			AddRow(test.ValidCheptelAlbum.ID))
 
 	albums := []entity.CheptelAlbum{}
-	err := suite.Repository.QueryByOwnerIDs(suite.ctx, &albums, test.ValidCheptelAlbum.OwnerID)
+	err := suite.Repository.QueryByOwnerIDs(
+		suite.ctx,
+		&albums,
+		test.ValidCheptelAlbum.CheptelID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), test.ValidCheptelAlbum.ID, albums[0].ID)
 }

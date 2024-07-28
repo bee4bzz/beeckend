@@ -100,10 +100,10 @@ func (s *Service) Create(
 	}
 
 	album := entity.CheptelAlbum{
+		CheptelID: req.CheptelID,
 		Album: entity.Album{
 			Name:        req.Name,
 			Observation: req.Observation,
-			OwnerID:     req.CheptelID,
 		},
 	}
 
@@ -132,9 +132,7 @@ func (s *Service) Update(
 		Model: gorm.Model{
 			ID: req.AlbumID,
 		},
-		Album: entity.Album{
-			OwnerID: req.CheptelID,
-		},
+		CheptelID: req.CheptelID,
 	}
 
 	err = s.Repository.Get(ctx, &album)
@@ -154,9 +152,9 @@ func (s *Service) Update(
 			ID: req.AlbumID,
 		},
 		Album: entity.Album{
-			OwnerID: req.NewCheptelID,
-			Name:    req.NewName,
+			Name: req.NewName,
 		},
+		CheptelID: req.NewCheptelID,
 	}
 
 	err = s.Repository.Update(ctx, &album)
@@ -178,10 +176,8 @@ func (s *Service) Delete(ctx context.Context, req schema.Request) error {
 	}
 
 	album := entity.CheptelAlbum{
-		Model: gorm.Model{ID: req.AlbumID},
-		Album: entity.Album{
-			OwnerID: req.CheptelID,
-		},
+		Model:     gorm.Model{ID: req.AlbumID},
+		CheptelID: req.CheptelID,
 	}
 
 	return s.Repository.SoftDelete(ctx, &album)

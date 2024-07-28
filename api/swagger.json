@@ -1,8 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "JWT Token: You must precede the token with `Bearer `",
+        "title": "Beeckend API",
+        "contact": {},
+        "version": "NA"
     },
+    "basePath": "/api/v1",
     "paths": {
         "/cheptels": {
             "get": {
@@ -20,11 +24,228 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "query"
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "JWT Token": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cheptel"
+                ],
+                "summary": "Create a cheptel",
+                "parameters": [
+                    {
+                        "description": "Cheptel to create",
+                        "name": "cheptel",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_gaetanDubuc_beeckend_internal_cheptel_schema.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
             }
+        },
+        "/login": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "parameters": [
+                    {
+                        "description": "Credentials",
+                        "name": "creds",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.Session"
+                        }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "delete": {
+                "security": [
+                    {
+                        "JWT Token": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/public-key": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.PublicKeyResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/refresh-jwt": {
+            "post": {
+                "security": [
+                    {
+                        "JWT Token": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "parameters": [
+                    {
+                        "description": "Credentials",
+                        "name": "creds",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_gaetanDubuc_beeckend_internal_refresh-token_schema.RefreshRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.Session"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "github_com_gaetanDubuc_beeckend_internal_authenticator_schema.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "test12345"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "user@example.com"
+                }
+            }
+        },
+        "github_com_gaetanDubuc_beeckend_internal_authenticator_schema.PublicKeyResponse": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_gaetanDubuc_beeckend_internal_authenticator_schema.Session": {
+            "type": "object",
+            "properties": {
+                "jwt": {
+                    "type": "string"
+                },
+                "refresh_jwt": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_gaetanDubuc_beeckend_internal_cheptel_schema.CreateRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_gaetanDubuc_beeckend_internal_refresh-token_schema.RefreshRequest": {
+            "type": "object",
+            "properties": {
+                "challenge": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BasicAuth": {
+            "type": "basic"
+        },
+        "JWT Token": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

@@ -2,21 +2,14 @@ package service
 
 import (
 	"context"
-	"time"
-	ti "time"
 
 	"github.com/gaetanDubuc/beeckend/internal/entity"
+	"github.com/gaetanDubuc/beeckend/internal/log"
 	"github.com/gaetanDubuc/beeckend/internal/refresh-token/schema"
-	tokenschema "github.com/gaetanDubuc/beeckend/internal/token/schema"
-	"github.com/gaetanDubuc/beeckend/pkg/log"
-	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
-
-type JWTGenerator interface {
-	GenerateJWT(ctx context.Context, claim jwt.Claims) (string, error)
-}
 
 type UserRepository interface {
 	Get(ctx context.Context, userUUID uuid.UUID) (entity.User, error)
@@ -25,9 +18,9 @@ type UserRepository interface {
 }
 
 type TokenService interface {
-	Create(ctx context.Context, req tokenschema.CreateRequest) (entity.Token, error)
-	ConfirmAndDelete(ctx context.Context, req tokenschema.ConfirmRequest) error
-	DeleteBy(ctx context.Context, filters map[string]any, tableName string) error
+	Create(ctx context.Context, token *entity.RefreshToken) error
+	ConfirmAndDelete(ctx context.Context, expiration int, token *entity.RefreshToken) error
+	HardDelete(ctx context.Context, token *entity.RefreshToken) error
 }
 
 type Hasher interface {
@@ -35,41 +28,46 @@ type Hasher interface {
 }
 
 // NewService creates a new user confirmation service.
-func NewService(
+func New(
 	tokenService TokenService,
-	jwtGenerator JWTGenerator,
 	hasher Hasher,
 	expiration int,
+	signingMethod jwt.SigningMethod,
+	keyfunc func(*jwt.Token) (interface{}, error),
 	logger log.Logger,
 ) *Service {
 	return &Service{
 		tokenService,
-		jwtGenerator,
 		expiration,
+		signingMethod,
+		keyfunc,
 	}
 }
 
 type Service struct {
 	TokenService
-	jwtGenerator JWTGenerator
-	expiration   int
+	expiration    int
+	SigningMethod jwt.SigningMethod
+	Keyfunc       func(*jwt.Token) (interface{}, error)
 }
 
 func (s *Service) Create(ctx context.Context, req schema.CreateRequest) (string, error) {
 	if err := req.Validate(); err != nil {
 		return "", err
 	}
-	token, err := s.TokenService.Create(
-		ctx,
-		tokenschema.CreateRequest{
-			OwnerUUID: req.UserID,
-			OwnerType: entity.RefreshTokenType,
+	token := entity.RefreshToken{
+		Token: entity.Token{
+			OwnerID: req.UserID,
 		},
+	}
+	err := s.TokenService.Create(
+		ctx,
+		&token,
 	)
 	if err != nil {
 		return "", err
 	}
-	jwt, err := s.GenerateJWT(ctx, token)
+	jwt, err := s.GenerateJWT(ctx, req.UserID, token.GetToken())
 	if err != nil {
 		return "", err
 	}
@@ -83,12 +81,15 @@ func (s *Service) Refresh(ctx context.Context, req schema.RefreshRequest) (strin
 
 	err := s.TokenService.ConfirmAndDelete(
 		ctx,
-		tokenschema.ConfirmRequest{
-			OwnerUUID:  req.UserID,
-			OwnerType:  entity.RefreshTokenType,
-			Expiration: s.expiration,
-			TokenUUID:  req.TokenUUID,
-			Token:      req.Token,
+		s.expiration,
+		&entity.RefreshToken{
+			Model: gorm.Model{
+				ID: req.TokenID,
+			},
+			Token: entity.Token{
+				OwnerID: req.UserID,
+				Token:   req.Token,
+			},
 		},
 	)
 
@@ -113,45 +114,30 @@ func (s *Service) DeleteFromUser(ctx context.Context, req schema.DeleteFromUserR
 	if err := req.Validate(); err != nil {
 		return err
 	}
-	err := s.TokenService.DeleteBy(
-		ctx,
-		map[string]any{"owner_UUID": req.UserID.String()},
-		string(entity.RefreshTokenType),
-	)
-	if err != nil {
-		return err
+
+	token := entity.RefreshToken{
+		Token: entity.Token{
+			OwnerID: req.UserID,
+		},
 	}
-	return nil
+
+	// We delete it after the confirmation and before the expiration check
+	// to avoid the token to be used again.
+	return s.TokenService.HardDelete(ctx, &token)
 }
 
-func (s *Service) GenerateJWT(ctx context.Context, token entity.Token) (string, error) {
-	claim := makeTokenClaim(token, s.expiration)
-	JWT, err := s.jwtGenerator.GenerateJWT(ctx, claim)
+// GenerateJWT generates a JWT token for a given user.
+func (s *Service) GenerateJWT(ctx context.Context, userID uint, token string) (string, error) {
+	claim := schema.MakeUserClaim(userID, s.expiration, token)
+
+	tok := jwt.NewWithClaims(s.SigningMethod, claim)
+	key, err := s.Keyfunc(tok)
+	if err != nil {
+		return "", err
+	}
+	JWT, err := tok.SignedString(key)
 	if err != nil {
 		return "", err
 	}
 	return JWT, nil
-}
-
-func makeTokenClaim(refreshToken entity.Token, expiration int) *RefreshJWTClaims {
-	return &RefreshJWTClaims{
-		UUID:  refreshToken.UUID,
-		Token: refreshToken.Token,
-		Exp:   time.Now().UTC().Add(ti.Duration(expiration) * ti.Second).Unix(),
-	}
-}
-
-type RefreshJWTClaims struct {
-	UUID  uuid.UUID `json:"UUID"`
-	Token string    `json:"token"`
-	Exp   int64     `json:"exp"`
-}
-
-// Validate RefreshJWTClaims structure.
-func (c *RefreshJWTClaims) Valid() error {
-	return validation.ValidateStruct(c,
-		validation.Field(&c.UUID, val.NotNilUUID),
-		validation.Field(&c.Token, validation.Required),
-		validation.Field(&c.Exp, validation.Required, validation.Min(time.Now().Unix()).Exclusive().Error("Token is expired")),
-	)
 }

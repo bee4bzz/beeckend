@@ -1,17 +1,19 @@
 package repository
 
 import (
+	"bytes"
 	"context"
-	"os"
 	"testing"
 
-	"github.com/gaetanDubuc/beeckend/internal/cheptelmanager/service"
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
+	"github.com/gaetanDubuc/beeckend/internal/utils"
+	"github.com/gaetanDubuc/beeckend/pkg/log"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -23,31 +25,38 @@ type RepositoryIntegrationSuite struct {
 	suite.Suite
 	ctx        context.Context
 	db         *db.DB
-	Repository service.Repository
+	Repository *GormRepository
+	buffer     *bytes.Buffer
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	suite.ctx = context.Background()
-	suite.db = db.NewGormForTest(sqlite.Open(dbName))
+	logger, _, b := log.NewForTest()
+	suite.buffer = b
+
+	config, err := utils.LoadConfig("../../../")
+	if err != nil {
+		logger.Fatal("cannot load config:", err)
+		panic(err)
+	}
+	suite.db = db.NewGormWithMigrate(
+		postgres.Open(config.DBSource),
+		"file://../../../migrations",
+		config.DatabaseURL,
+		logger)
+
 	suite.Repository = NewGormRepository(suite.db)
 }
 
-// this function executes after all tests executed
-func (suite *RepositoryIntegrationSuite) TearDownSuite() {
-	if err := os.Remove(dbName); err != nil {
-		suite.T().Errorf("Error while deleting the database file: %s", err)
-	}
-}
-
 func (suite *RepositoryIntegrationSuite) SetupTest() {
-	db.Seed(suite.T(), suite.db,
-		&test.ValidUser,
-	)
+	db.Clean(suite.T(), suite.db)
+	db.Seed(suite.T(), suite.db, &test.ValidUser)
 }
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
-	db.Clean(suite.T(), suite.db)
+	suite.T().Log(suite.buffer)
+	suite.buffer.Reset()
 }
 
 func (suite *RepositoryIntegrationSuite) TestCreate() {

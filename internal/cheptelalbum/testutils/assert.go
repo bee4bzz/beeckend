@@ -15,7 +15,7 @@ func AssertAlbum(t *testing.T, expected, actual entity.CheptelAlbum) {
 	assert.NotEmpty(t, actual.UpdatedAt, "UpdatedAt should not be empty")
 	assert.Equal(t, expected.Name, actual.Name, "Name should be equal")
 	assert.Equal(t, expected.Observation, actual.Observation, "Observation should be equal")
-	assert.Equal(t, expected.OwnerID, actual.OwnerID, "OwnerID should be equal")
+	assert.Equal(t, expected.CheptelID, actual.CheptelID, "OwnerID should be equal")
 	for idx, v := range expected.Photos {
 		assert.Equal(t, v, actual.Photos[idx], "Photos should be equal")
 	}

@@ -25,23 +25,20 @@ func (q QueryRequest) Validate() error {
 }
 
 type CreateRequest struct {
-	UserID    uint   `json:"-"`
-	CheptelID uint   `json:"cheptel_ID"`
-	Name      string `json:"name"`
+	UserID uint   `json:"-"`
+	Name   string `json:"name"`
 }
 
 func (u CreateRequest) Validate() error {
 	return validation.ValidateStruct(&u,
 		validation.Field(&u.UserID, validation.Required),
-		validation.Field(&u.CheptelID, validation.Required),
 	)
 }
 
 func (u CreateRequest) CopyWith(new CreateRequest) CreateRequest {
 	return CreateRequest{
-		UserID:    utils.UintOr(new.UserID, u.UserID),
-		CheptelID: utils.UintOr(new.CheptelID, u.CheptelID),
-		Name:      utils.StringOr(new.Name, u.Name),
+		UserID: utils.UintOr(new.UserID, u.UserID),
+		Name:   utils.StringOr(new.Name, u.Name),
 	}
 }
 

@@ -1,3 +1,27 @@
+-- create "refresh_tokens" table
+CREATE TABLE "public"."refresh_tokens" (
+  "id" bigserial NOT NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "deleted_at" timestamptz NULL,
+  "owner_id" bigint NULL,
+  "hashed_token" text NULL,
+  PRIMARY KEY ("id")
+);
+-- create index "idx_refresh_tokens_deleted_at" to table: "refresh_tokens"
+CREATE INDEX "idx_refresh_tokens_deleted_at" ON "public"."refresh_tokens" ("deleted_at");
+-- create "albums" table
+CREATE TABLE "public"."albums" (
+  "name" text NOT NULL,
+  "observation" text NULL
+);
+-- create index "idx_albums_key" to table: "albums"
+CREATE UNIQUE INDEX "idx_albums_key" ON "public"."albums" ("name");
+-- create "tokens" table
+CREATE TABLE "public"."tokens" (
+  "owner_id" bigint NULL,
+  "hashed_token" text NULL
+);
 -- create "cheptels" table
 CREATE TABLE "public"."cheptels" (
   "id" bigserial NOT NULL,
@@ -17,14 +41,14 @@ CREATE TABLE "public"."cheptel_albums" (
   "deleted_at" timestamptz NULL,
   "name" text NOT NULL,
   "observation" text NULL,
-  "owner_id" bigint NOT NULL,
+  "cheptel_id" bigint NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "fk_cheptels_albums" FOREIGN KEY ("owner_id") REFERENCES "public"."cheptels" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "fk_cheptels_albums" FOREIGN KEY ("cheptel_id") REFERENCES "public"."cheptels" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- create index "idx_cheptel_albums_deleted_at" to table: "cheptel_albums"
 CREATE INDEX "idx_cheptel_albums_deleted_at" ON "public"."cheptel_albums" ("deleted_at");
 -- create index "idx_cheptel_albums_key" to table: "cheptel_albums"
-CREATE UNIQUE INDEX "idx_cheptel_albums_key" ON "public"."cheptel_albums" ("name", "owner_id");
+CREATE UNIQUE INDEX "idx_cheptel_albums_key" ON "public"."cheptel_albums" ("name", "cheptel_id");
 -- create "cheptel_notes" table
 CREATE TABLE "public"."cheptel_notes" (
   "id" bigserial NOT NULL,
@@ -44,6 +68,19 @@ CREATE TABLE "public"."cheptel_notes" (
 );
 -- create index "idx_cheptel_notes_deleted_at" to table: "cheptel_notes"
 CREATE INDEX "idx_cheptel_notes_deleted_at" ON "public"."cheptel_notes" ("deleted_at");
+-- create "cheptel_photos" table
+CREATE TABLE "public"."cheptel_photos" (
+  "id" bigserial NOT NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "deleted_at" timestamptz NULL,
+  "path" text NOT NULL,
+  "cheptel_album_id" bigint NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "fk_cheptel_albums_photos" FOREIGN KEY ("cheptel_album_id") REFERENCES "public"."cheptel_albums" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- create index "idx_cheptel_photos_deleted_at" to table: "cheptel_photos"
+CREATE INDEX "idx_cheptel_photos_deleted_at" ON "public"."cheptel_photos" ("deleted_at");
 -- create "hives" table
 CREATE TABLE "public"."hives" (
   "id" bigserial NOT NULL,
@@ -85,42 +122,27 @@ CREATE TABLE "public"."hive_note_albums" (
   "deleted_at" timestamptz NULL,
   "name" text NOT NULL,
   "observation" text NULL,
-  "owner_id" bigint NOT NULL,
+  "hive_note_id" bigint NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "fk_hive_notes_albums" FOREIGN KEY ("owner_id") REFERENCES "public"."hive_notes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "fk_hive_notes_albums" FOREIGN KEY ("hive_note_id") REFERENCES "public"."hive_notes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- create index "idx_hive_note_albums_deleted_at" to table: "hive_note_albums"
 CREATE INDEX "idx_hive_note_albums_deleted_at" ON "public"."hive_note_albums" ("deleted_at");
 -- create index "idx_hive_note_albums_key" to table: "hive_note_albums"
-CREATE UNIQUE INDEX "idx_hive_note_albums_key" ON "public"."hive_note_albums" ("name", "owner_id");
--- create "albums" table
-CREATE TABLE "public"."albums" (
-  "id" bigserial NOT NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "deleted_at" timestamptz NULL,
-  "name" text NOT NULL,
-  "observation" text NULL,
-  "owner_id" bigint NOT NULL,
-  PRIMARY KEY ("id")
-);
--- create index "idx_albums_deleted_at" to table: "albums"
-CREATE INDEX "idx_albums_deleted_at" ON "public"."albums" ("deleted_at");
--- create index "idx_albums_key" to table: "albums"
-CREATE UNIQUE INDEX "idx_albums_key" ON "public"."albums" ("name", "owner_id");
--- create "photos" table
-CREATE TABLE "public"."photos" (
+CREATE UNIQUE INDEX "idx_hive_note_albums_key" ON "public"."hive_note_albums" ("name", "hive_note_id");
+-- create "hive_note_photos" table
+CREATE TABLE "public"."hive_note_photos" (
   "id" bigserial NOT NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "deleted_at" timestamptz NULL,
   "path" text NOT NULL,
-  "album_id" bigint NOT NULL,
+  "hive_note_album_id" bigint NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "fk_albums_photos" FOREIGN KEY ("album_id") REFERENCES "public"."albums" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "fk_hive_note_albums_photos" FOREIGN KEY ("hive_note_album_id") REFERENCES "public"."hive_note_albums" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
--- create index "idx_photos_deleted_at" to table: "photos"
-CREATE INDEX "idx_photos_deleted_at" ON "public"."photos" ("deleted_at");
+-- create index "idx_hive_note_photos_deleted_at" to table: "hive_note_photos"
+CREATE INDEX "idx_hive_note_photos_deleted_at" ON "public"."hive_note_photos" ("deleted_at");
 -- create "users" table
 CREATE TABLE "public"."users" (
   "id" bigserial NOT NULL,
@@ -129,6 +151,7 @@ CREATE TABLE "public"."users" (
   "deleted_at" timestamptz NULL,
   "name" text NOT NULL,
   "email" text NOT NULL,
+  "hashed_password" text NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "uni_users_email" UNIQUE ("email")
 );

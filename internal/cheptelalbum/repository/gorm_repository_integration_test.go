@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"testing"
@@ -10,9 +11,12 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/test"
+	"github.com/gaetanDubuc/beeckend/internal/utils"
+	"github.com/gaetanDubuc/beeckend/pkg/log"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -25,12 +29,26 @@ type RepositoryIntegrationSuite struct {
 	ctx        context.Context
 	db         *db.DB
 	Repository *GormRepository
+	buffer     *bytes.Buffer
 }
 
 // this function executes before the test suite begins execution
 func (suite *RepositoryIntegrationSuite) SetupSuite() {
 	suite.ctx = context.Background()
-	suite.db = db.NewGormForTest(sqlite.Open(dbName))
+	logger, _, b := log.NewForTest()
+	suite.buffer = b
+
+	config, err := utils.LoadConfig("../../../")
+	if err != nil {
+		logger.Fatal("cannot load config:", err)
+		panic(err)
+	}
+	suite.db = db.NewGormWithMigrate(
+		postgres.Open(config.DBSource),
+		"file://../../../migrations",
+		config.DatabaseURL,
+		logger)
+
 	suite.Repository = NewGormRepository(suite.db)
 }
 
@@ -56,9 +74,9 @@ func (suite *RepositoryIntegrationSuite) TestCreate() {
 			ID: 100,
 		},
 		Album: entity.Album{
-			Name:    "new album",
-			OwnerID: test.ValidCheptel.ID,
+			Name: "new album",
 		},
+		CheptelID: test.ValidCheptel.ID,
 	}
 	albumCopy := album
 	now := time.Now()

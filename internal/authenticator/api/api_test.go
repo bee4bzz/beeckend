@@ -2,9 +2,12 @@ package api
 
 import (
 	"bytes"
+	"net/http"
 	"testing"
 
 	"github.com/gaetanDubuc/beeckend/internal/authenticator/schema"
+	refreshtokenschema "github.com/gaetanDubuc/beeckend/internal/refresh-token/schema"
+
 	"github.com/gaetanDubuc/beeckend/internal/authenticator/testutils"
 	"github.com/gaetanDubuc/beeckend/internal/db"
 	"github.com/gaetanDubuc/beeckend/internal/router"
@@ -65,8 +68,6 @@ func (suite *APITestSuite) Test_A_User_Can_Login() {
 	}
 	suite.authMiddleware.On("OnlyUnauthenticated").
 		Return().Once()
-	suite.authMiddleware.On("CurrentAuthenticatedUser").
-		Return(test.ValidUser).Once()
 	suite.service.On("Login", req).
 		Return(schema.Session{
 			JWT:        "JWT",
@@ -74,6 +75,63 @@ func (suite *APITestSuite) Test_A_User_Can_Login() {
 		}, nil).Once()
 
 	testutils.LoginRootTest.
+		WithLogger(suite.logger).
+		WithRouter(suite.router).
+		WithRequest(
+			req,
+		).CheckEndpoint(suite.T())
+}
+
+func (suite *APITestSuite) Test_Return_An_Error_If_A_User_Login_With_An_Invalid_Username() {
+	suite.authMiddleware.On("OnlyUnauthenticated").
+		Return().Once()
+
+	testutils.LoginRootTest.
+		WithLogger(suite.logger).
+		WithRouter(suite.router).
+		WithWantStatus(http.StatusBadRequest).
+		WithWantResponse("").
+		WithBody(
+			"",
+		).CheckEndpoint(suite.T())
+}
+
+func (suite *APITestSuite) Test_Return_An_Error_If_The_Service_Fails_To_Login() {
+	req := schema.LoginRequest{
+		Username: test.ValidUser.Email,
+		Password: test.Password,
+	}
+	suite.authMiddleware.On("OnlyUnauthenticated").
+		Return().Once()
+	suite.service.On("Login", req).
+		Return(schema.Session{}, test.AnError).Once()
+
+	testutils.LoginRootTest.
+		WithLogger(suite.logger).
+		WithRouter(suite.router).
+		WithRequest(
+			req,
+		).WithWantStatus(http.StatusUnauthorized).
+		WithWantResponse("").
+		CheckEndpoint(suite.T())
+}
+
+func (suite *APITestSuite) Test_A_User_Can_Refresh_Its_Session() {
+	req := refreshtokenschema.RefreshRequest{
+		UserID:  test.ValidUser.ID,
+		TokenID: 1,
+		Token:   "Token",
+	}
+	suite.authMiddleware.On("AuthHandler").
+		Return().Once()
+
+	suite.service.On("RefreshSession", req).
+		Return(schema.Session{
+			JWT:        "JWT",
+			RefreshJWT: "RefreshJWT",
+		}, nil).Once()
+
+	testutils.RefreshSessionRootTest.
 		WithLogger(suite.logger).
 		WithRouter(suite.router).
 		WithRequest(

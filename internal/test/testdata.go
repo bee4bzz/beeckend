@@ -92,16 +92,16 @@ var (
 			UpdatedAt: time.Now().UTC(),
 		},
 		Album: entity.Album{
-			Name:    "ValidCheptelAlbum",
-			OwnerID: 1,
+			Name: "ValidCheptelAlbum",
 		},
+		CheptelID: 1,
 	}
 
-	ValidPhoto = entity.Photo{
+	ValidPhoto = entity.CheptelPhoto{
 		Model: gorm.Model{
 			ID: 1,
 		},
-		AlbumID: 1,
+		CheptelAlbumID: 1,
 	}
 
 	ValidHive = entity.Hive{
@@ -138,7 +138,8 @@ var (
 			ID: 1,
 		},
 		Album: entity.Album{
-			Name:    "ValidHiveNoteAlbum",
-			OwnerID: 1},
+			Name: "ValidHiveNoteAlbum",
+		},
+		HiveNoteID: 1,
 	}
 )

@@ -66,7 +66,6 @@ func (suite *RepositoryIntegrationSuite) SetupTest() {
 
 func (suite *RepositoryIntegrationSuite) TearDownTest() {
 	suite.T().Log(suite.buffer)
-
 	suite.buffer.Reset()
 }
 

@@ -11,9 +11,9 @@ var (
 	InValidHiveNoteAlbum = HiveNoteAlbum{
 		Album: Album{
 			Name:        "Album",
-			OwnerID:     1,
 			Observation: utils.String(""),
 		},
+		HiveNoteID: 1,
 	}
 
 	EmptyHiveNote = HiveNote{

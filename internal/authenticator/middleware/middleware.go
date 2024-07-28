@@ -25,7 +25,7 @@ type UserRepository interface {
 	Get(ctx context.Context, user *entity.User) error
 }
 
-func NewMiddleware(signingMethod string, keyfunc jwt.Keyfunc, userRepository UserRepository, logger log.Logger) *Middleware {
+func New(signingMethod string, keyfunc jwt.Keyfunc, userRepository UserRepository, logger log.Logger) *Middleware {
 	return &Middleware{
 		signingMethod:  signingMethod,
 		keyfunc:        keyfunc,
@@ -42,7 +42,7 @@ type Middleware struct {
 }
 
 // OnlyUnauthenticated reject all authenticated requests.
-func (m *Middleware) OnlyUnauthenticated(c *gin.Context) error {
+func (m *Middleware) OnlyUnauthenticated(c *gin.Context) {
 	if c.Request.Header.Get("Authorization") != "" {
 		// Not explicit to avoid instantly give malicious user that they must
 		// not be authenticated to continue with this request.
@@ -50,7 +50,6 @@ func (m *Middleware) OnlyUnauthenticated(c *gin.Context) error {
 		m.logger.Error("no Authorization header provided for this request")
 		c.AbortWithStatus(http.StatusForbidden)
 	}
-	return nil
 }
 
 func (m *Middleware) AuthHandler(c *gin.Context) {

@@ -17,7 +17,7 @@ type HiveNote struct {
 	NBRisers    uint   `gorm:"not null"`
 	Operation   string `gorm:"not null"`
 	Observation *string
-	Albums      []HiveNoteAlbum `gorm:"constraint:OnDelete:CASCADE;foreignKey:OwnerID"`
+	Albums      []HiveNoteAlbum `gorm:"constraint:OnDelete:CASCADE;foreignKey:HiveNoteID"`
 }
 
 // Validate HiveNote structure.
