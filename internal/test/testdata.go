@@ -10,8 +10,18 @@ import (
 )
 
 var (
-	Password            = "password12345"
+	Password            = "test12345"
 	HashedPassword, err = bcrypt.GenerateFromPassword([]byte(Password), bcrypt.DefaultCost)
+
+	// Used in development database.
+	UserDevelopment = entity.User{
+		Model: gorm.Model{
+			ID: 1,
+		},
+		Name:           "UserDevelopment",
+		Email:          "user@example.com",
+		HashedPassword: string(HashedPassword),
+	}
 
 	// User has:
 	// 2 cheptels

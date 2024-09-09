@@ -15,11 +15,14 @@ import (
 	cheptelmngservice "github.com/gaetanDubuc/beeckend/internal/cheptelmanager/service"
 	"github.com/gaetanDubuc/beeckend/internal/crypto"
 	"github.com/gaetanDubuc/beeckend/internal/db"
-	refreshtokrepository "github.com/gaetanDubuc/beeckend/internal/refresh-token/repository"
-	refreshtokservice "github.com/gaetanDubuc/beeckend/internal/refresh-token/service"
+	refreshsession "github.com/gaetanDubuc/beeckend/internal/refresh-session/api"
+	refreshtokrepository "github.com/gaetanDubuc/beeckend/internal/refresh-session/repository"
+	refreshtokservice "github.com/gaetanDubuc/beeckend/internal/refresh-session/service"
 	"github.com/gaetanDubuc/beeckend/internal/router"
+	"github.com/gaetanDubuc/beeckend/internal/test"
 	tokenservice "github.com/gaetanDubuc/beeckend/internal/token"
 	userrepository "github.com/gaetanDubuc/beeckend/internal/user/repository"
+	userservice "github.com/gaetanDubuc/beeckend/internal/user/service"
 	"github.com/gaetanDubuc/beeckend/internal/utils"
 	crypt "github.com/gaetanDubuc/beeckend/pkg/crypto"
 	"github.com/gaetanDubuc/beeckend/pkg/log"
@@ -63,7 +66,7 @@ func main() {
 		logger)
 
 	router, v1 := router.New(os.Stdout, db)
-	RegisterHandlers(v1, db, pool, logger)
+	RegisterHandlers(v1, db, pool, config, logger)
 	server := utils.NewServer(config.ServerAddress, router)
 
 	go func() {
@@ -77,7 +80,7 @@ func main() {
 	utils.GracefulShutdown(server, logger)
 }
 
-func RegisterHandlers(router *gin.RouterGroup, db *db.DB, pool *pgxpool.Pool, logger *log.Logger) {
+func RegisterHandlers(router *gin.RouterGroup, db *db.DB, pool *pgxpool.Pool, config utils.Config, logger *log.Logger) {
 	// Utilities
 	upgrader := &websocket.Upgrader{} // use default options
 	hasher := crypto.NewHasher(32)
@@ -109,7 +112,6 @@ func RegisterHandlers(router *gin.RouterGroup, db *db.DB, pool *pgxpool.Pool, lo
 		logger)
 	authService := authservice.New(
 		userRepository,
-		refreshTokenService,
 		hasher,
 		3600,
 		jwt.SigningMethodRS256,
@@ -129,6 +131,8 @@ func RegisterHandlers(router *gin.RouterGroup, db *db.DB, pool *pgxpool.Pool, lo
 		logger,
 	)
 
+	userService := userservice.NewService(userRepository)
+
 	// Middlewares
 	authMiddleware := authmiddleware.New(jwt.SigningMethodRS256.Name,
 		func(t *jwt.Token) (interface{}, error) {
@@ -136,6 +140,25 @@ func RegisterHandlers(router *gin.RouterGroup, db *db.DB, pool *pgxpool.Pool, lo
 		}, userRepository, logger)
 
 	// APIs
-	authapi.RegisterHandlers(router, authService, authMiddleware, "", logger)
+	authapi.RegisterHandlers(
+		router,
+		authService,
+		refreshTokenService,
+		userService,
+		authMiddleware,
+		"",
+		logger)
+	refreshsession.RegisterHandlers(
+		router,
+		refreshTokenService,
+		authService,
+		authMiddleware,
+		"",
+		logger)
 	cheptelapi.RegisterHandlers(router, cheptelService, authMiddleware, upgrader, logger)
+
+	// Add data to the database.
+	if config.AppEnv == "development" {
+		userRepository.Create(context.Background(), &test.UserDevelopment)
+	}
 }

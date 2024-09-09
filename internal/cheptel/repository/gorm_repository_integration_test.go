@@ -144,10 +144,25 @@ func (suite *RepositoryIntegrationSuite) Test_A_User_Can_Subscribe_To_Cheptels_M
 	err = suite.Repository.SoftDelete(ctx, &entity.Cheptel{Model: gorm.Model{ID: test.ValidUser.Cheptels[0].ID}})
 	assert.NoError(suite.T(), err)
 
-	err = suite.Repository.Create(ctx, &test.ValidCheptel)
-	assert.Error(suite.T(), err)
-
 	testutils.AssertCheptels(suite.T(), test.ValidUser.Cheptels[1:], *<-cheptels)
+
+	// Test that the channel doesn't return any value from a rollbacked transaction
+	suite.db.DB().Transaction(func(tx *gorm.DB) error {
+		ctx := context.WithValue(ctx, db.TxKey, tx)
+		err = suite.Repository.SoftDelete(ctx, &entity.Cheptel{Model: gorm.Model{ID: test.ValidUser.Cheptels[1].ID}})
+		assert.NoError(suite.T(), err)
+
+		err = suite.Repository.Create(ctx, &entity.Cheptel{})
+		assert.Error(suite.T(), err)
+
+		return err
+	})
+
+	select {
+	case val := <-cheptels:
+		suite.T().Fatal("Unexpected value in the channel", val)
+	default:
+	}
 
 	cancel()
 
@@ -156,6 +171,6 @@ func (suite *RepositoryIntegrationSuite) Test_A_User_Can_Subscribe_To_Cheptels_M
 	assert.False(suite.T(), ok)
 }
 
-func TestRepositoryIntegrationTestSuite(t *testing.T) {
+func TestRepositoryIntegrationSuite(t *testing.T) {
 	suite.Run(t, new(RepositoryIntegrationSuite))
 }

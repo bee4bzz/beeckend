@@ -5,7 +5,7 @@ import (
 
 	"github.com/gaetanDubuc/beeckend/internal/authenticator/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
-	refreshtokenschema "github.com/gaetanDubuc/beeckend/internal/refresh-token/schema"
+	refreshtokenschema "github.com/gaetanDubuc/beeckend/internal/refresh-session/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
 )
@@ -32,8 +32,17 @@ type Middleware struct {
 }
 
 func (m *Middleware) AuthHandler(c *gin.Context) {
-	status := m.Called().Get(0).(int)
-	if status != 0 {
+	args := m.Called()
+	if len(args) > 0 {
+		status := args.Get(0).(int)
+		c.AbortWithStatus(status)
+	}
+}
+
+func (m *Middleware) AuthHandlerWithoutExpiration(c *gin.Context) {
+	args := m.Called()
+	if len(args) > 0 {
+		status := args.Get(0).(int)
 		c.AbortWithStatus(status)
 	}
 }

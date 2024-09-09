@@ -60,7 +60,11 @@ type Resource[T Conn] struct {
 // @Produce	json
 // @Success	200	{string}	query
 // @Router		/cheptels [get]
+// @Security	JWT Token
 func (r *Resource[T]) query(c *gin.Context) {
+	ctx := c.Request.Context()
+	user := r.authMiddleware.CurrentAuthenticatedUser(ctx)
+
 	conn, err := r.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		r.logger.Error("upgrade:", err)
@@ -73,9 +77,9 @@ func (r *Resource[T]) query(c *gin.Context) {
 		}
 	}()
 
-	ctx, cancel := context.WithCancel(c.Request.Context())
+	ctx, cancel := context.WithCancel(ctx)
 	chCheptels := make(chan *[]entity.Cheptel)
-	err = r.service.Subscribe(ctx, &entity.User{}, chCheptels)
+	err = r.service.Subscribe(ctx, &user, chCheptels)
 	if err != nil {
 		r.logger.Error("subscribe:", err)
 		panic(err)

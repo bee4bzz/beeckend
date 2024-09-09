@@ -8,7 +8,7 @@ import (
 	"github.com/gaetanDubuc/beeckend/internal/authenticator/schema"
 	"github.com/gaetanDubuc/beeckend/internal/entity"
 	"github.com/gaetanDubuc/beeckend/internal/log"
-	refreshtokenschema "github.com/gaetanDubuc/beeckend/internal/refresh-token/schema"
+	refreshsessionschema "github.com/gaetanDubuc/beeckend/internal/refresh-session/schema"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,9 +22,16 @@ type (
 	// Service encapsulates the authentication logic.
 	Service interface {
 		// authenticate authenticates a user using username and password.
-		Login(ctx context.Context, req schema.LoginRequest) (schema.Session, error)
-		RefreshSession(ctx context.Context, req refreshtokenschema.RefreshRequest) (schema.Session, error)
-		Logout(ctx context.Context, req schema.LogoutRequest) error
+		Login(ctx context.Context, req schema.LoginRequest) (string, error)
+	}
+
+	RefreshSessionService interface {
+		Create(ctx context.Context, req refreshsessionschema.CreateRequest) (string, error)
+		DeleteFromUser(ctx context.Context, req refreshsessionschema.DeleteFromUserRequest) error
+	}
+
+	UserService interface {
+		Get(ctx context.Context, user *entity.User) error
 	}
 )
 
@@ -33,20 +40,22 @@ type (
 func RegisterHandlers(
 	rg *gin.RouterGroup,
 	service Service,
+	refreshSessionService RefreshSessionService,
+	userService UserService,
 	authMid Middleware,
 	publicKeyPEM string,
 	logger log.Logger,
 ) {
 	res := resource{
 		service,
+		refreshSessionService,
+		userService,
 		authMid,
 		publicKeyPEM,
 		logger.With(context.Background(), "api", "auth"),
 	}
 
 	rgAuth := rg.Group("")
-
-	rgAuth.POST(path.RefreshSessionPath, res.RefreshSession)
 
 	rgAuth.POST(path.LoginPath, authMid.OnlyUnauthenticated, res.login)
 	rgAuth.GET(path.PublicKeyPath, res.publicKey)
@@ -55,10 +64,12 @@ func RegisterHandlers(
 }
 
 type resource struct {
-	service      Service
-	authMid      Middleware
-	publicKeyPEM string
-	logger       log.Logger
+	service               Service
+	refreshSessionService RefreshSessionService
+	userService           UserService
+	authMid               Middleware
+	publicKeyPEM          string
+	logger                log.Logger
 }
 
 // login handles user basic authentication request.
@@ -85,7 +96,7 @@ func (r resource) login(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	session, err := r.service.Login(
+	JWT, err := r.service.Login(
 		ctx,
 		req,
 	)
@@ -95,45 +106,33 @@ func (r resource) login(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	c.SecureJSON(http.StatusOK, session)
-}
 
-// RefreshJWT handles refresh token request.
-// Summary	login the user and refresh its JWT
-//
-//	@Tags		auth
-//	@Accept		json
-//	@Produce	json
-//	@Success	200		{object}	schema.Session
-//	@Param		creds	body		refreshtokenschema.RefreshRequest	true	"Credentials"
-//	@Router		/refresh-jwt [post]
-//	@Security	JWT Token
-//
-//nolint:gofmt
-func (r resource) RefreshSession(c *gin.Context) {
-	logger := r.logger.With(c.Request.Context(), "method", "refresh-session")
-
-	var req refreshtokenschema.RefreshRequest
-	err := c.ShouldBind(&req)
-	if err != nil {
-		logger.Error(err)
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
+	user := entity.User{
+		Email: req.Username,
 	}
 
-	ctx := c.Request.Context()
+	err = r.userService.Get(ctx, &user)
 
-	user := r.authMid.CurrentAuthenticatedUser(ctx)
-	req.UserID = user.ID
-
-	session, err := r.service.RefreshSession(ctx, req)
 	if err != nil {
 		logger.Error(err)
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	c.SecureJSON(http.StatusOK, session)
+	refreshJWT, err := r.refreshSessionService.Create(ctx, refreshsessionschema.CreateRequest{
+		UserID: user.ID,
+	})
+
+	if err != nil {
+		logger.Error(err)
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	c.SecureJSON(http.StatusOK, schema.Session{
+		JWT:        JWT,
+		RefreshJWT: refreshJWT,
+	})
 }
 
 // logout handles user logout request.
@@ -153,7 +152,7 @@ func (r resource) logout(c *gin.Context) {
 	ctx := c.Request.Context()
 	user := r.authMid.CurrentAuthenticatedUser(ctx)
 
-	err := r.service.Logout(ctx, schema.LogoutRequest{
+	err := r.refreshSessionService.DeleteFromUser(ctx, refreshsessionschema.DeleteFromUserRequest{
 		UserID: user.ID,
 	})
 

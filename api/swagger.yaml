@@ -26,10 +26,10 @@ definitions:
       name:
         type: string
     type: object
-  github_com_gaetanDubuc_beeckend_internal_refresh-token_schema.RefreshRequest:
+  github_com_gaetanDubuc_beeckend_internal_refresh-session_schema.RefreshRequest:
     properties:
       challenge:
-        type: string
+        type: integer
       token:
         type: string
     type: object
@@ -50,6 +50,8 @@ paths:
           description: OK
           schema:
             type: string
+      security:
+      - JWT Token: []
       summary: Query the user's cheptels
       tags:
       - Cheptel
@@ -133,7 +135,7 @@ paths:
         name: creds
         required: true
         schema:
-          $ref: '#/definitions/github_com_gaetanDubuc_beeckend_internal_refresh-token_schema.RefreshRequest'
+          $ref: '#/definitions/github_com_gaetanDubuc_beeckend_internal_refresh-session_schema.RefreshRequest'
       produces:
       - application/json
       responses:
@@ -143,6 +145,19 @@ paths:
             $ref: '#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.Session'
       security:
       - JWT Token: []
+      tags:
+      - auth
+  /refresh-jwt/public-key:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.PublicKeyResponse'
       tags:
       - auth
 securityDefinitions:

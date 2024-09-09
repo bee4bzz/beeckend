@@ -59,6 +59,7 @@ func (m *Middleware) AuthHandler(c *gin.Context) {
 			TokenHandler:  m.handleToken,
 			SigningMethod: m.signingMethod,
 			Keyfunc:       m.keyfunc,
+			Options:       []jwt.ParserOption{jwt.WithExpirationRequired()},
 		})(c)
 	if err != nil {
 		m.logger.Error(err)

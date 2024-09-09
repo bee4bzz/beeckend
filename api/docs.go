@@ -17,6 +17,11 @@ const docTemplate = `{
     "paths": {
         "/cheptels": {
             "get": {
+                "security": [
+                    {
+                        "JWT Token": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -177,7 +182,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_gaetanDubuc_beeckend_internal_refresh-token_schema.RefreshRequest"
+                            "$ref": "#/definitions/github_com_gaetanDubuc_beeckend_internal_refresh-session_schema.RefreshRequest"
                         }
                     }
                 ],
@@ -186,6 +191,27 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.Session"
+                        }
+                    }
+                }
+            }
+        },
+        "/refresh-jwt/public-key": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_gaetanDubuc_beeckend_internal_authenticator_schema.PublicKeyResponse"
                         }
                     }
                 }
@@ -233,11 +259,11 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_gaetanDubuc_beeckend_internal_refresh-token_schema.RefreshRequest": {
+        "github_com_gaetanDubuc_beeckend_internal_refresh-session_schema.RefreshRequest": {
             "type": "object",
             "properties": {
                 "challenge": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "token": {
                     "type": "string"

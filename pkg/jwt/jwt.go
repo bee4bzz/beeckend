@@ -33,6 +33,8 @@ type Params[C Context] struct {
 	TokenHandler JWTTokenHandler[C]
 	// a function to get a dynamic VerificationKey
 	Keyfunc func(t *jwt.Token) (interface{}, error)
+
+	Options []jwt.ParserOption
 }
 
 func JWT[C Context](claims jwt.Claims, p Params[C]) func(C) error {
@@ -45,16 +47,17 @@ func JWT[C Context](claims jwt.Claims, p Params[C]) func(C) error {
 	if p.TokenHandler == nil {
 		p.TokenHandler = DefaultJWTTokenHandler
 	}
+	p.Options = append(p.Options, jwt.WithTimeFunc(
+		func() time.Time {
+			return time.Now().UTC()
+		},
+	))
+	p.Options = append(p.Options, jwt.WithStrictDecoding())
+	p.Options = append(p.Options, jwt.WithIssuedAt())
+	p.Options = append(p.Options, jwt.WithValidMethods([]string{p.SigningMethod}))
+
 	parser := jwt.NewParser(
-		jwt.WithTimeFunc(
-			func() time.Time {
-				return time.Now().UTC()
-			},
-		),
-		jwt.WithExpirationRequired(),
-		jwt.WithStrictDecoding(),
-		jwt.WithIssuedAt(),
-		jwt.WithValidMethods([]string{p.SigningMethod}),
+		p.Options...,
 	)
 	return func(c C) error {
 		header := c.GetHeader("Authorization")

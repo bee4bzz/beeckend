@@ -157,6 +157,7 @@ func (tc APITestCase[T]) Dial(t *testing.T) *websocket.Conn {
 				assert.Regexp(t, *tc.WantResponse, err.Error(), "response mismatch")
 			}
 		}
+		fmt.Print("CCCCCCCCCCC", c, err, req.URL.String())
 		httpStatusEqual(t, *tc.WantStatus, response.StatusCode, "status mismatch")
 		return c
 	}

@@ -46,7 +46,7 @@ type (
 	}
 )
 
-// NewService creates a new token service.
+// New creates a new token service.
 func New[T Tokenable](
 	repo Repository[T],
 	hasher Hasher,

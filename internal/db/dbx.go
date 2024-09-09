@@ -20,7 +20,7 @@ type TransactionFunc func(ctx context.Context, f func(ctx context.Context) error
 type contextKey int
 
 const (
-	txKey contextKey = iota
+	TxKey contextKey = iota
 )
 
 // New returns a new DB connection that wraps the given dbx.DB instance.
@@ -37,7 +37,7 @@ func (db *DB) DB() *gorm.DB {
 // With will return the transaction if it is found in the given context.
 // Otherwise it will return a DB connection associated with the context.
 func (db *DB) With(ctx context.Context) *gorm.DB {
-	if tx, ok := ctx.Value(txKey).(*gorm.DB); ok {
+	if tx, ok := ctx.Value(TxKey).(*gorm.DB); ok {
 		return tx
 	}
 	return db.db.WithContext(ctx)
@@ -50,7 +50,7 @@ func (db *DB) TransactionHandler() gin.HandlerFunc {
 		db.db.Transaction(func(tx *gorm.DB) error {
 			timeoutContext, cancel := context.WithTimeout(c.Request.Context(), time.Second)
 			defer cancel()
-			ctx := context.WithValue(timeoutContext, txKey, tx)
+			ctx := context.WithValue(timeoutContext, TxKey, tx)
 			c.Request = c.Request.WithContext(ctx)
 			c.Next()
 

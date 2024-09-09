@@ -9,6 +9,7 @@ import (
 )
 
 type Repository interface {
+	Get(ctx context.Context, user *entity.User) error
 	Update(ctx context.Context, user *entity.User) error
 }
 

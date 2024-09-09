@@ -112,7 +112,9 @@ func (suite *APITestSuite) Test_User_Can_Subscribe_To_Cheptels_Modifications() {
 	expectedStates := []*[]entity.Cheptel{
 		&test.ValidUser.Cheptels,
 	}
-	suite.service.On("Subscribe", &entity.User{}).
+
+	suite.authMiddleware.On("CurrentAuthenticatedUser").Return(test.ValidUser).Once()
+	suite.service.On("Subscribe", &test.ValidUser).
 		Return(
 			expectedStates,
 			nil).Once()
@@ -140,21 +142,25 @@ func (suite *APITestSuite) Test_User_Can_Subscribe_To_Cheptels_Modifications() {
 }
 
 func (suite *APITestSuite) Test_Return_An_Error_When_The_Request_Can_Not_Be_Upgraded() {
+	suite.authMiddleware.On("CurrentAuthenticatedUser").Return(test.ValidUser).Once()
+
 	suite.upgrader.On("Upgrade", mock.Anything, mock.Anything, mock.Anything).
 		Return(&testutils.WSConn{}, test.AnError).Once()
 
 	assert.PanicsWithError(suite.T(), test.AnError.Error(), func() {
-		suite.resource.query(&gin.Context{})
+		suite.resource.query(&gin.Context{Request: &http.Request{}})
 	})
 }
 
 func (suite *APITestSuite) Test_Panic_When_The_Service_Can_Not_Subscribe_To_Modifications() {
+	suite.authMiddleware.On("CurrentAuthenticatedUser").Return(test.ValidUser).Once()
+
 	suite.upgrader.On("Upgrade", mock.Anything, mock.Anything, mock.Anything).
 		Return(suite.conn, nil).Once()
 
 	suite.conn.On("Close").Return(nil).Once()
 
-	suite.service.On("Subscribe", &entity.User{}).
+	suite.service.On("Subscribe", &test.ValidUser).
 		Return(
 			nil,
 			test.AnError).Once()
@@ -167,13 +173,15 @@ func (suite *APITestSuite) Test_Panic_When_The_Service_Can_Not_Subscribe_To_Modi
 }
 
 func (suite *APITestSuite) Test_Panic_When_The_Resource_Can_Not_Write_Message_To_The_Websocket() {
+	suite.authMiddleware.On("CurrentAuthenticatedUser").Return(test.ValidUser).Once()
+
 	suite.upgrader.On("Upgrade", mock.Anything, mock.Anything, mock.Anything).
 		Return(suite.conn, nil).Once()
 
 	expectedStream := []*[]entity.Cheptel{
 		&test.ValidUser.Cheptels,
 	}
-	suite.service.On("Subscribe", &entity.User{}).
+	suite.service.On("Subscribe", &test.ValidUser).
 		Return(
 			expectedStream,
 			nil).Once()

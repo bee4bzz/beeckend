@@ -84,6 +84,7 @@ func (suite *ServiceIntegrationSuite) SetupTest() {
 
 func (suite *ServiceIntegrationSuite) TearDownTest() {
 	suite.T().Log(suite.buffer)
+	suite.buffer.Reset()
 	suite.observer.TakeAll()
 }
 
